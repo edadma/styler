@@ -1,19 +1,25 @@
 package xyz.hyperreal.pargen
 
 import scala.util.parsing.combinator.RegexParsers
+import scala.util.parsing.input.{Position, Positional}
 
 object SyntaxNotationParser extends RegexParsers {
+
+  def pos: Parser[Position] = positioned(success(new Positional {})) ^^ { _.pos }
 
   def syntax: Parser[SyntaxAST] = rep1(production) ^^ SyntaxAST
 
   def production: Parser[ProductionAST] =
-    name ~ "=" ~ pattern ~ "." ^^ {
-      case n ~ _ ~ p ~ _ => ProductionAST(n, p)
+    pos ~ name ~ "=" ~ pattern ~ "." ^^ {
+      case pos ~ n ~ _ ~ pat ~ _ => ProductionAST(pos, n, pat)
     }
 
   def name: Parser[String] = "[A-Za-z_][A-Za-z0-9_]*".r
 
-  def identifier: Parser[IdentifierAST] = name ^^ IdentifierAST
+  def identifier: Parser[IdentifierAST] =
+    pos ~ name ^^ {
+      case p ~ n => IdentifierAST(p, n)
+    }
 
   def pattern: Parser[ElemAST] =
     rep1sep(sequence, "|") ^^ {
@@ -22,8 +28,13 @@ object SyntaxNotationParser extends RegexParsers {
     }
 
   def action: Parser[ActionAST] =
-    "<" ~> name <~ ">" ^^ NormalActionAST |
-      "<$" ~> name <~ ">" ^^ SpecialActionAST
+    pos ~ ("<" ~> name <~ ">") ^^ {
+      case p ~ n =>
+        NormalActionAST(p, n)
+    } |
+      pos ~ ("/" ~> name) ^^ {
+        case p ~ n => SpecialActionAST(p, n)
+      }
 
   def sequence: Parser[ElemAST] =
     rep1(elem) ~ opt(action) ^^ {
@@ -36,21 +47,28 @@ object SyntaxNotationParser extends RegexParsers {
     identifier |
       string |
       number |
-      "[" ~> pattern <~ "]" ^^ OptionAST |
-      "{" ~> pattern <~ "}" ^^ RepeatAST |
+      pos ~ ("[" ~> pattern <~ "]") ^^ {
+        case pos ~ pat => OptionAST(pos, pat)
+      } |
+      pos ~ ("{" ~> pattern <~ "}") ^^ {
+        case pos ~ pat => RepeatAST(pos, pat)
+      } |
       "(" ~> pattern <~ ")"
 
-  def number: Parser[LiteralAST] = """\d+(\.\d*)?""".r ^^ { n =>
-    LiteralAST("number", n)
-  }
+  def number: Parser[LiteralAST] =
+    pos ~ """\d+(\.\d*)?""".r ^^ {
+      case p ~ n => LiteralAST(p, "number", n)
+    }
 
-  def string: Parser[LiteralAST] = """"[^"\n]*"""".r ^^ { s =>
-    LiteralAST("string", s)
-  }
+  def string: Parser[LiteralAST] =
+    pos ~ """"[^"\n]*"""".r ^^ {
+      case p ~ s => LiteralAST(p, "string", s)
+    }
 
-  def apply(input: String): SyntaxAST = parseAll(syntax, input) match {
-    case Success(result, _) => result
-    case failure: NoSuccess => scala.sys.error(failure.msg)
-  }
+  def apply(input: String): SyntaxAST =
+    parseAll(syntax, input) match {
+      case Success(result, _) => result
+      case failure: NoSuccess => scala.sys.error(failure.msg)
+    }
 
 }

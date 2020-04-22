@@ -1,4 +1,4 @@
--scala-native
-=============
+pargen
+======
 
-This is a template project for Scala native.
+Recursive descent parser generator.
