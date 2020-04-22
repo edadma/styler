@@ -1,11 +1,10 @@
 package xyz.hyperreal.pargen
 
 import scala.collection.mutable
-import scala.util.parsing.input.{CharSequenceReader, Reader}
 
 object Interpreter {
 
-  def apply(syntax: SyntaxAST, r: Reader[Char]) = {
+  def apply(syntax: SyntaxAST, r: Input): Node = {
     val prods = new mutable.HashMap[String, ProductionAST]
 
     for (p <- syntax.productions)
@@ -14,9 +13,30 @@ object Interpreter {
         case Some(_) => problem(p.pos, s"production name has already been used: ${p.name}")
       }
 
-    elem(syntax.productions.head.pattern, r)
+    parse(syntax.productions.head.pattern, r)._1
   }
 
-  def elem(e: ElemAST, r: Reader[Char]): Node = {}
+  private def matches(r: Input, s: String) = {
+    @scala.annotation.tailrec
+    def matches(r: Input, idx: Int): Option[Input] =
+      if (idx == s.length)
+        Some(r)
+      else if (r.atEnd || r.first != s(idx))
+        None
+      else
+        matches(r.rest, idx + 1)
+
+    matches(r, 0)
+  }
+
+  private def parse(e: ElemAST, r: Input) =
+    e match {
+      case LiteralAST(pos, s) =>
+        matches(r, s) match {
+          case None       => problem(pos, "literal mismatch")
+          case Some(rest) => (LiteralNode(s), rest)
+        }
+      case IdentifierAST(pos, s) =>
+    }
 
 }

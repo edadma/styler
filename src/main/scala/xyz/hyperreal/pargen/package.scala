@@ -1,8 +1,10 @@
 package xyz.hyperreal
 
-import scala.util.parsing.input.Position
+import scala.util.parsing.input.{Position, Reader}
 
 package object pargen {
+
+  type Input = Reader[Char]
 
   def perror(msg: String): Nothing = problem(null, msg)
 

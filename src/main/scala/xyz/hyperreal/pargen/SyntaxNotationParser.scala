@@ -45,8 +45,7 @@ object SyntaxNotationParser extends RegexParsers {
 
   def elem: Parser[ElemAST] =
     identifier |
-      string |
-      number |
+      literal |
       pos ~ ("[" ~> pattern <~ "]") ^^ {
         case pos ~ pat => OptionAST(pos, pat)
       } |
@@ -55,14 +54,14 @@ object SyntaxNotationParser extends RegexParsers {
       } |
       "(" ~> pattern <~ ")"
 
-  def number: Parser[LiteralAST] =
-    pos ~ """\d+(\.\d*)?""".r ^^ {
-      case p ~ n => LiteralAST(p, "number", n)
-    }
+//  def number: Parser[LiteralAST] =
+//    pos ~ """\d+(\.\d*)?""".r ^^ {
+//      case p ~ n => LiteralAST(p, "number", n)
+//    }
 
-  def string: Parser[LiteralAST] =
+  def literal: Parser[LiteralAST] =
     pos ~ """"[^"\n]*"""".r ^^ {
-      case p ~ s => LiteralAST(p, "string", s)
+      case p ~ s => LiteralAST(p, s)
     }
 
   def apply(input: String): SyntaxAST =

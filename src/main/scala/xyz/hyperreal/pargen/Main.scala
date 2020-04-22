@@ -1,5 +1,7 @@
 package xyz.hyperreal.pargen
 
+import scala.util.parsing.input.CharSequenceReader
+
 object Main extends App {
 
   val input =
@@ -10,6 +12,6 @@ object Main extends App {
   val ast = SyntaxNotationParser(input)
 
   println(ast)
-  Interpreter(ast)
+  Interpreter(ast, new CharSequenceReader(input))
 
 }

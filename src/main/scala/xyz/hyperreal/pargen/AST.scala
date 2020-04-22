@@ -9,7 +9,7 @@ case class ProductionAST(pos: Position, name: String, pattern: ElemAST) extends 
 abstract class ElemAST                                             extends AST
 case class AlternatesAST(terms: Seq[ElemAST])                      extends ElemAST { val pos: Position = null }
 case class SequenceAST(s: Seq[ElemAST], action: Option[ActionAST]) extends ElemAST { val pos: Position = null }
-case class LiteralAST(pos: Position, typ: String, s: String)       extends ElemAST
+case class LiteralAST(pos: Position, s: String)                    extends ElemAST
 case class IdentifierAST(pos: Position, s: String)                 extends ElemAST
 case class OptionAST(pos: Position, expr: ElemAST)                 extends ElemAST
 case class RepeatAST(pos: Position, expr: ElemAST)                 extends ElemAST
