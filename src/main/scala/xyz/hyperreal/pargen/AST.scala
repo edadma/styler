@@ -3,8 +3,8 @@ package xyz.hyperreal.pargen
 import scala.util.parsing.input.Position
 
 abstract class AST { val pos: Position }
-case class SyntaxAST(productions: Seq[ProductionAST])            extends AST { val pos: Position = productions.head.pos }
-case class ProductionAST(pos: Position, name: String, expr: AST) extends AST
+case class SyntaxAST(productions: Seq[ProductionAST])                   extends AST { val pos: Position = productions.head.pos }
+case class ProductionAST(pos: Position, name: String, pattern: ElemAST) extends AST
 
 abstract class ElemAST                                             extends AST
 case class AlternatesAST(terms: Seq[ElemAST])                      extends ElemAST { val pos: Position = null }
