@@ -21,10 +21,15 @@ object SyntaxNotationParser extends RegexParsers {
       case l       => AlternatesAST(l)
     }
 
+  def action: Parser[ActionAST] =
+    "<" ~> name <~ ">" ^^ NormalActionAST |
+      "<$" ~> name <~ ">" ^^ SpecialActionAST
+
   def sequence: Parser[ElemAST] =
-    rep1(elem) ^^ {
-      case List(e) => e
-      case l       => SequenceAST(l)
+    rep1(elem) ~ opt(action) ^^ {
+      case List(e) ~ None    => e
+      case List(_) ~ Some(_) => sys.error("can't have an action here")
+      case l ~ a             => SequenceAST(l, a)
     }
 
   def elem: Parser[ElemAST] =

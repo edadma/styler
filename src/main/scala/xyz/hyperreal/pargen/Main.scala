@@ -4,7 +4,7 @@ object Main extends App {
 
   val input =
     """
-      |expression = term { ("+"| "-") term }.
+      |expression = term { ("+"| "-") term } <@lassoc>.
       |term = number | ident.
       |""".stripMargin
   val ast = SyntaxNotationParser(input)
