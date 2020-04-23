@@ -46,32 +46,43 @@ object Interpreter {
 
           alternative(alts)
         case SequenceAST(seq, action) =>
-          println(seq)
           val buf = new ListBuffer[Node]
 
           @scala.annotation.tailrec
           def sequence(s: Seq[PatternAST], r: Input): Option[(Node, Input)] =
             s match {
               case Nil =>
-//                if (action isDefined)
-//                  action.get match {
-//                    case NormalActionAST(pos, name) =>
-//                    case SpecialActionAST(pos, name) =>
-//                  }
-//                else
-                Some((BranchNode("seq", buf.toList), r))
+                if (action isDefined) {
+                  action.get match {
+                    case NormalActionAST(pos, name) => Some((BranchNode(name, buf.toList), r))
+                    case SpecialActionAST(pos, "infixl") =>
+                      val tree =
+                        buf(1).asInstanceOf[BranchNode].nodes.foldLeft(buf.head) {
+                          case (a, BranchNode("seq", Seq(LiteralNode(op), b))) =>
+                            BranchNode(op, Seq(a, b))
+                        }
+
+                      Some((tree, r))
+                  }
+                } else if (buf.length == 1)
+                  Some((buf.head, r))
+                else
+                  Some(BranchNode("seq", buf.toList), r)
               case h :: t =>
                 parse(h, r) match {
                   case None => None
                   case Some((n, r)) =>
-                    buf += n
+                    if (!h.isInstanceOf[QuietAST])
+                      buf += n
+
                     sequence(t, r)
                 }
             }
 
           sequence(seq, r)
+        case QuietAST(pos, e) => parse(e, r)
         case LiteralAST(pos, s) =>
-          matches(r, s) map (rest => (LeafNode("literal", s), skipSpace(rest))) // todo: problem(pos, "literal mismatch")
+          matches(r, s) map (rest => (LiteralNode(s), skipSpace(rest))) // todo: problem(pos, "literal mismatch")
         case IdentifierAST(pos, s) =>
           rules get s match {
             case None =>

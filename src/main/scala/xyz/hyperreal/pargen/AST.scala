@@ -13,6 +13,7 @@ case class LiteralAST(pos: Position, s: String)                         extends 
 case class IdentifierAST(pos: Position, s: String)                      extends PatternAST
 case class OptionAST(pos: Position, pattern: PatternAST)                extends PatternAST
 case class RepeatAST(pos: Position, pattern: PatternAST)                extends PatternAST
+case class QuietAST(pos: Position, elem: PatternAST)                    extends PatternAST
 
 abstract class ActionAST                                 extends AST
 case class NormalActionAST(pos: Position, name: String)  extends ActionAST

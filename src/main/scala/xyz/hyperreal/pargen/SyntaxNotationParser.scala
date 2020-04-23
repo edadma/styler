@@ -43,13 +43,16 @@ object SyntaxNotationParser extends RegexParsers {
       case p ~ n => IdentifierAST(p, n)
     } |
       pos ~ """"[^"\n]*"""".r ^^ {
-        case p ~ s => LiteralAST(p, s)
+        case p ~ s => LiteralAST(p, s.substring(1, s.length - 1))
       } |
       pos ~ ("[" ~> pattern <~ "]") ^^ {
         case pos ~ pat => OptionAST(pos, pat)
       } |
       pos ~ ("{" ~> pattern <~ "}") ^^ {
         case pos ~ pat => RepeatAST(pos, pat)
+      } |
+      pos ~ ("-" ~> elem) ^^ {
+        case pos ~ pat => QuietAST(pos, pat)
       } |
       "(" ~> pattern <~ ")"
 
