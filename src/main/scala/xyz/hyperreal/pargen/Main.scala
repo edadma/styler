@@ -4,7 +4,7 @@ import scala.util.parsing.input.CharSequenceReader
 
 object Main extends App {
 
-  val input = //"""expression = term { ("+" | "-") term } /infixl. term = number | ident."""
+  val input =
     """
       |expression = term { ("+" | "-") term } /infixl.
       |
