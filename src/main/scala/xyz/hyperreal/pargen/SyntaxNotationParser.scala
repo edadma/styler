@@ -16,12 +16,7 @@ object SyntaxNotationParser extends RegexParsers {
 
   def name: Parser[String] = "[A-Za-z_][A-Za-z0-9_]*".r
 
-  def identifier: Parser[IdentifierAST] =
-    pos ~ name ^^ {
-      case p ~ n => IdentifierAST(p, n)
-    }
-
-  def pattern: Parser[ElemAST] =
+  def pattern: Parser[PatternAST] =
     rep1sep(sequence, "|") ^^ {
       case List(e) => e
       case l       => AlternatesAST(l)
@@ -36,16 +31,20 @@ object SyntaxNotationParser extends RegexParsers {
         case p ~ n => SpecialActionAST(p, n)
       }
 
-  def sequence: Parser[ElemAST] =
+  def sequence: Parser[PatternAST] =
     rep1(elem) ~ opt(action) ^^ {
       case List(e) ~ None    => e
       case List(_) ~ Some(_) => sys.error("can't have an action here")
       case l ~ a             => SequenceAST(l, a)
     }
 
-  def elem: Parser[ElemAST] =
-    identifier |
-      literal |
+  def elem: Parser[PatternAST] =
+    pos ~ name ^^ {
+      case p ~ n => IdentifierAST(p, n)
+    } |
+      pos ~ """"[^"\n]*"""".r ^^ {
+        case p ~ s => LiteralAST(p, s)
+      } |
       pos ~ ("[" ~> pattern <~ "]") ^^ {
         case pos ~ pat => OptionAST(pos, pat)
       } |
@@ -58,11 +57,6 @@ object SyntaxNotationParser extends RegexParsers {
 //    pos ~ """\d+(\.\d*)?""".r ^^ {
 //      case p ~ n => LiteralAST(p, "number", n)
 //    }
-
-  def literal: Parser[LiteralAST] =
-    pos ~ """"[^"\n]*"""".r ^^ {
-      case p ~ s => LiteralAST(p, s)
-    }
 
   def apply(input: String): SyntaxAST =
     parseAll(syntax, input) match {

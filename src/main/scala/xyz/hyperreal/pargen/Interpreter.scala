@@ -1,20 +1,149 @@
 package xyz.hyperreal.pargen
 
+import java.util.regex.Pattern
+
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
+import scala.util.Try
 
 object Interpreter {
 
-  def apply(syntax: SyntaxAST, r: Input): Node = {
-    val prods = new mutable.HashMap[String, ProductionAST]
+  private val builtin =
+    Map[String, Input => Option[(String, Input)]](
+      "number" -> numberMatcher,
+      "ident"  -> identMatcher
+    )
+
+  def apply(syntax: SyntaxAST, r: Input): Option[Node] = {
+    val rules = new mutable.HashMap[String, PatternAST]
+
+    def parse(e: PatternAST, r: Input): Option[(Node, Input)] =
+      e match {
+        case RepeatAST(pos, pattern) =>
+          val buf = new ListBuffer[Node]
+
+          @scala.annotation.tailrec
+          def repeat(r: Input): (BranchNode, Input) =
+            parse(pattern, r) match {
+              case None => (BranchNode("rep", buf.toList), r)
+              case Some((n, r)) =>
+                buf += n
+                repeat(r)
+            }
+
+          Some(repeat(r))
+        case AlternatesAST(alts) =>
+          @scala.annotation.tailrec
+          def alternative(alts: Seq[PatternAST]): Option[(Node, Input)] =
+            alts match {
+              case Nil => None
+              case h :: t =>
+                parse(h, r) match {
+                  case None => alternative(t)
+                  case res  => res
+                }
+            }
+
+          alternative(alts)
+        case SequenceAST(seq, action) =>
+          println(seq)
+          val buf = new ListBuffer[Node]
+
+          @scala.annotation.tailrec
+          def sequence(s: Seq[PatternAST], r: Input): Option[(Node, Input)] =
+            s match {
+              case Nil =>
+//                if (action isDefined)
+//                  action.get match {
+//                    case NormalActionAST(pos, name) =>
+//                    case SpecialActionAST(pos, name) =>
+//                  }
+//                else
+                Some((BranchNode("seq", buf.toList), r))
+              case h :: t =>
+                parse(h, r) match {
+                  case None => None
+                  case Some((n, r)) =>
+                    buf += n
+                    sequence(t, r)
+                }
+            }
+
+          sequence(seq, r)
+        case LiteralAST(pos, s) =>
+          matches(r, s) map (rest => (LeafNode("literal", s), skipSpace(rest))) // todo: problem(pos, "literal mismatch")
+        case IdentifierAST(pos, s) =>
+          rules get s match {
+            case None =>
+              builtin get s match {
+                case None => problem(pos, s"unknown rule: $s")
+                case Some(matcher) =>
+                  matcher(r) map { case (m, rest) => (LeafNode(s, m), skipSpace(rest)) } // todo: problem(pos, s"failed to match a '$s'")
+              }
+            case Some(rule) => parse(rule, r)
+          }
+      }
 
     for (p <- syntax.productions)
-      prods get p.name match {
-        case None    => prods(p.name) = p
+      rules get p.name match {
+        case None    => rules(p.name) = p.pattern
         case Some(_) => problem(p.pos, s"production name has already been used: ${p.name}")
       }
 
-    parse(syntax.productions.head.pattern, r)._1
+    parse(syntax.productions.head.pattern, skipSpace(r)) match {
+      case None => None
+      case Some((n, r)) =>
+        if (r.atEnd)
+          Some(n)
+        else
+          None
+    }
   }
+
+  @scala.annotation.tailrec
+  private def skipSpace(r: Input): Input =
+    if (!r.atEnd && r.first.isWhitespace)
+      skipSpace(r.rest)
+    else
+      r
+
+  private def csMatcher(r: Input, init: Char => Boolean, rest: Char => Boolean) = {
+    val buf = new StringBuilder
+
+    if (r.atEnd || !init(r.first))
+      None
+    else {
+      @scala.annotation.tailrec
+      def csMatcher(r: Input): Option[(String, Input)] =
+        if (r.atEnd || !rest(r.first))
+          Some((buf.toString, r))
+        else {
+          buf += r.first
+          csMatcher(r.rest)
+        }
+
+      buf += r.first
+      csMatcher(r.rest)
+    }
+  }
+
+  private def identMatcher(r: Input) =
+    csMatcher(r, c => c.isLetter || c == '_', c => c.isLetterOrDigit || c == '_')
+
+  private def regexMatcher(r: Input, init: Char => Boolean, rest: Char => Boolean, p: Pattern) =
+    csMatcher(r, init, rest) match {
+      case None => None
+      case res @ Some((m, r1)) =>
+        if (p.matcher(m).matches)
+          res
+        else
+          None
+    }
+
+  private val numberCharSet = Set('.', 'e', 'E', '-', '+') ++ ('0' to '9')
+  private val numberRegex   = """(?:\d+\.\d+|\.\d+|\d+)(?:(?:e|E)(?:\+|-)?\d+)?""".r.pattern
+
+  private def numberMatcher(r: Input) = regexMatcher(r, numberCharSet, numberCharSet, numberRegex)
 
   private def matches(r: Input, s: String) = {
     @scala.annotation.tailrec
@@ -28,15 +157,5 @@ object Interpreter {
 
     matches(r, 0)
   }
-
-  private def parse(e: ElemAST, r: Input) =
-    e match {
-      case LiteralAST(pos, s) =>
-        matches(r, s) match {
-          case None       => problem(pos, "literal mismatch")
-          case Some(rest) => (LiteralNode(s), rest)
-        }
-      case IdentifierAST(pos, s) =>
-    }
 
 }

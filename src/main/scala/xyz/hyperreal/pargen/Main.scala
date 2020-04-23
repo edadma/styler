@@ -4,14 +4,14 @@ import scala.util.parsing.input.CharSequenceReader
 
 object Main extends App {
 
-  val input =
-    """
-      |expression = term { ("+" | "-") term } /lassoc.
-      |term = number | ident.
-      |""".stripMargin
+  val input = """expression = "+"."""
+//    """
+//      |expression = term { ("+" | "-") term } /lassoc.
+//      |term = number | ident.
+//      |""".stripMargin
   val ast = SyntaxNotationParser(input)
 
   println(ast)
-  Interpreter(ast, new CharSequenceReader(input))
+  println(Interpreter(ast, new CharSequenceReader("+")))
 
 }
