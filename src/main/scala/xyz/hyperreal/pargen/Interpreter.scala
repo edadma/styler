@@ -60,6 +60,7 @@ object Interpreter {
                         buf(1).asInstanceOf[BranchNode].nodes.foldLeft(buf.head) {
                           case (a, BranchNode("seq", Seq(LiteralNode(op), b))) =>
                             BranchNode(op, Seq(a, b))
+                          case _ => problem(pos, "invalid pattern for 'infixl' special action")
                         }
 
                       Some((tree, r))

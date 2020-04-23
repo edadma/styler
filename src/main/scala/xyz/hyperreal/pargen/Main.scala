@@ -8,13 +8,15 @@ object Main extends App {
     """
       |expression = term { ("+" | "-") term } /infixl.
       |
-      |term = number
-      |     | ident
-      |     | -"(" expression -")".
+      |term = factor { ("*" | "/") factor } /infixl.
+      |
+      |factor = number
+      |       | ident
+      |       | -"(" expression -")".
       |""".stripMargin
   val ast = SyntaxNotationParser(input)
 
   println(ast)
-  println(Interpreter(ast, new CharSequenceReader("a + (b + c)")))
+  println(Interpreter(ast, new CharSequenceReader("a + b * c")))
 
 }
