@@ -4,24 +4,37 @@ import scala.util.parsing.input.CharSequenceReader
 
 object Main extends App {
 
-  val input = //"""array = -"[" ident { -"," ident } -"]" /flatten."""
+  val input =
     """
       |a = -"[" b -"]" <array>.
       |b = { ident }.""".stripMargin
+
 //    """
-//      |value = number | string | object | array | "true" | "false" | "null".
+//      |expression = term { ("+" | "-") term } /infixl.
 //      |
-//      |object = "{" members "}".
+//      |term = factor { ("*" | "/") factor } /infixl.
 //      |
-//      |members = member { -"," member } /flatten.
-//      |
-//      |member = string -":" value <member>.
-//      |
-//      |array = value { -"," value } /flatten.
+//      |factor = number
+//      |       | ident
+//      |       | -"(" expression -")".
 //      |""".stripMargin
+
+  //    """
+  //      |value = number | string | object | array | "true" | "false" | "null".
+  //      |
+  //      |object = -"{" members -"}" <object>.
+  //      |
+  //      |members = member { -"," member } /flatten.
+  //      |
+  //      |member = string -":" value.
+  //      |
+  //      |array = -"[" elements -"]" <array>.
+  //      |
+  //      |elements = value { -"," value } /flatten.
+  //      |""".stripMargin
   val ast = SyntaxNotationParser(input)
 
   println(ast)
-  println(Interpreter(ast, new CharSequenceReader(""" [a] """)))
+  println(Interpreter(ast, new CharSequenceReader(""" a + b + c """)))
 
 }
