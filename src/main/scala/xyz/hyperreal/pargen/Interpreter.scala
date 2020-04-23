@@ -55,7 +55,13 @@ object Interpreter {
               case Nil =>
                 if (action isDefined) {
                   action.get match {
-                    case NormalActionAST(pos, name) => Some((BranchNode(name, buf.toList), r))
+                    case NormalActionAST(pos, name) =>
+                      if (buf.length == 1)
+                        buf.head match {
+                          case LeafNode(typ, value) => Some((LeafNode(name, value), r))
+                          case BranchNode(_, seq)   => Some((BranchNode(name, seq), r))
+                        } else
+                        Some((BranchNode(name, buf.toList), r))
                     case SpecialActionAST(pos, "infixl") =>
                       val tree =
                         buf(1).asInstanceOf[BranchNode].nodes.foldLeft(buf.head) {
@@ -68,8 +74,15 @@ object Interpreter {
                   }
                 } else if (buf.length == 1)
                   Some((buf.head, r))
-                else
-                  Some(BranchNode("seq", buf.toList), r)
+                else {
+                  val lifted =
+                    buf.toList flatMap {
+                      case LiftNode(BranchNode(_, seq)) => seq
+                      case _: LiftNode                  => problem(null, "can only lift a sequence")
+                      case e                            => List(e)
+                    }
+                  Some(BranchNode("seq", lifted), r)
+                }
               case h :: t =>
                 parse(h, r) match {
                   case None => None
@@ -83,6 +96,7 @@ object Interpreter {
 
           sequence(seq, r)
         case QuietAST(pos, e) => parse(e, r)
+        case LiftAST(pos, e)  => nodewrap(parse(e, r), LiftNode)
         case LiteralAST(pos, s) =>
           matches(r, s) map (rest => (LiteralNode(s), skipSpace(rest))) // todo: problem(pos, "literal mismatch")
         case IdentifierAST(pos, s) =>
@@ -112,6 +126,11 @@ object Interpreter {
           None
     }
   }
+
+  private def nodewrap(res: Option[(Node, Input)], wrapper: Node => Node) =
+    res map {
+      case (n, i) => (wrapper(n), i)
+    }
 
   @scala.annotation.tailrec
   private def skipSpace(r: Input): Input =

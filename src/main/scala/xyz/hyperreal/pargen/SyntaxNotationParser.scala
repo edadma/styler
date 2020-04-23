@@ -54,6 +54,9 @@ object SyntaxNotationParser extends RegexParsers {
       pos ~ ("-" ~> elem) ^^ {
         case pos ~ pat => QuietAST(pos, pat)
       } |
+      pos ~ ("^" ~> elem) ^^ {
+        case pos ~ pat => LiftAST(pos, pat)
+      } |
       "(" ~> pattern <~ ")"
 
 //  def number: Parser[LiteralAST] =

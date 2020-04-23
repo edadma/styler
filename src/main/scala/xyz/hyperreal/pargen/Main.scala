@@ -4,7 +4,10 @@ import scala.util.parsing.input.CharSequenceReader
 
 object Main extends App {
 
-  val input = """array = -"[" ident { -"," ident } -"]" /flatten."""
+  val input = //"""array = -"[" ident { -"," ident } -"]" /flatten."""
+    """
+      |a = -"[" b -"]" <array>.
+      |b = { ident }.""".stripMargin
 //    """
 //      |value = number | string | object | array | "true" | "false" | "null".
 //      |
@@ -19,6 +22,6 @@ object Main extends App {
   val ast = SyntaxNotationParser(input)
 
   println(ast)
-  println(Interpreter(ast, new CharSequenceReader(""" "asdf" """)))
+  println(Interpreter(ast, new CharSequenceReader(""" [a] """)))
 
 }
