@@ -11,7 +11,8 @@ object Interpreter {
   private val builtin =
     Map[String, Input => Option[(String, Input)]](
       "number" -> numberMatcher,
-      "ident"  -> identMatcher
+      "ident"  -> identMatcher,
+      "string" -> stringMatcher
     )
 
   def apply(syntax: SyntaxAST, r: Input): Option[Node] = {
@@ -118,6 +119,17 @@ object Interpreter {
       skipSpace(r.rest)
     else
       r
+
+  private def stringMatcher(r: Input) = {
+    csMatcher(r, _ == '"', _ != '"') match {
+      case None => None
+      case Some((s, r)) =>
+        if (r.atEnd)
+          None
+        else
+          Some((s substring 1, r.rest))
+    }
+  }
 
   private def csMatcher(r: Input, init: Char => Boolean, rest: Char => Boolean) = {
     val buf = new StringBuilder

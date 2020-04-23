@@ -42,7 +42,7 @@ object SyntaxNotationParser extends RegexParsers {
     pos ~ name ^^ {
       case p ~ n => IdentifierAST(p, n)
     } |
-      pos ~ """"[^"\n]*"""".r ^^ {
+      pos ~ """"[^"\n]*"|'[^'\n]'""".r ^^ {
         case p ~ s => LiteralAST(p, s.substring(1, s.length - 1))
       } |
       pos ~ ("[" ~> pattern <~ "]") ^^ {
