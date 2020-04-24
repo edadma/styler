@@ -56,11 +56,12 @@ object Interpreter {
                 if (action isDefined) {
                   action.get match {
                     case NormalActionAST(pos, name) =>
-                      if (buf.length == 1)
+                      if (buf.length == 1) {
                         buf.head match {
                           case LeafNode(typ, value) => Some((LeafNode(name, value), r))
                           case BranchNode(_, seq)   => Some((BranchNode(name, seq), r))
-                        } else
+                        }
+                      } else
                         Some((BranchNode(name, buf.toList), r))
                     case SpecialActionAST(pos, "infixl") =>
                       val tree =
@@ -71,6 +72,14 @@ object Interpreter {
                         }
 
                       Some((tree, r))
+                    case SpecialActionAST(pos, "flatten") =>
+                      def flatten(l: List[Node]): List[Node] =
+                        l flatMap {
+                          case BranchNode("rep", nodes) => nodes
+                          case n                        => List(n)
+                        }
+
+                      Some((BranchNode("seq", flatten(buf.toList)), r))
                   }
                 } else if (buf.length == 1)
                   Some((buf.head, r))
