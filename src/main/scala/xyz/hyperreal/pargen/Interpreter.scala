@@ -96,7 +96,7 @@ object Interpreter {
                 parse(h, r) match {
                   case None => None
                   case Some((n, r)) =>
-                    if (!h.isInstanceOf[QuietAST])
+                    if (!h.isInstanceOf[LiteralAST])
                       buf += n
 
                     sequence(t, r)
@@ -104,8 +104,7 @@ object Interpreter {
             }
 
           sequence(seq, r)
-        case QuietAST(pos, e) => parse(e, r)
-        case LiftAST(pos, e)  => nodewrap(parse(e, r), LiftNode)
+        case LiftAST(pos, e) => nodewrap(parse(e, r), LiftNode)
         case LiteralAST(pos, s) =>
           matches(r, s) map (rest => (LiteralNode(s), skipSpace(rest))) // todo: problem(pos, "literal mismatch")
         case IdentifierAST(pos, s) =>

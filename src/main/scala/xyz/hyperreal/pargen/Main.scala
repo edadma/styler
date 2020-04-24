@@ -23,19 +23,19 @@ object Main extends App {
     """
       |value = number | string | object | array | "true" | "false" | "null".
       |
-      |object = -"{" members -"}" <object> | -"{" -"}" <object>.
+      |object = "{" members "}" <object> | "{" "}" <object>.
       |
-      |members = member { -"," member } /flatten.
+      |members = member { "," member } /flatten.
       |
-      |member = string -":" value <kv>.
+      |member = string ":" value <kv>.
       |
-      |array = -"[" elements -"]" <array> | -"[" -"]" <array>.
+      |array = "[" elements "]" <array> | "[" "]" <array>.
       |
-      |elements = value { -"," value } /flatten.
+      |elements = value { "," value } /flatten.
       |""".stripMargin
   val ast = SyntaxNotationParser(input)
 
   println(ast)
-  println(Interpreter(ast, new CharSequenceReader(""" {"a": [1]} """)))
+  println(Interpreter(ast, new CharSequenceReader(""" {"a": [1], "b": []} """)))
 
 }

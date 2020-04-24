@@ -51,9 +51,6 @@ object SyntaxNotationParser extends RegexParsers {
       pos ~ ("{" ~> pattern <~ "}") ^^ {
         case pos ~ pat => RepeatAST(pos, pat)
       } |
-      pos ~ ("-" ~> elem) ^^ {
-        case pos ~ pat => QuietAST(pos, pat)
-      } |
       pos ~ ("^" ~> elem) ^^ {
         case pos ~ pat => LiftAST(pos, pat)
       } |
