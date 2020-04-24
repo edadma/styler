@@ -17,7 +17,7 @@ object Main extends App {
       |
       |factor = number
       |       | ident
-      |       | "(" expression ")".
+      |       | "(" expression ")" <group>.
       |""".stripMargin
 //    """
 //      |value = number | string | object | array | "true" | "false" | "null".

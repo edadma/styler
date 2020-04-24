@@ -55,14 +55,7 @@ object Interpreter {
               case Nil =>
                 if (action isDefined) {
                   action.get match {
-                    case NormalActionAST(pos, name) =>
-                      if (buf.length == 1) {
-                        buf.head match {
-                          case LeafNode(typ, value) => Some((LeafNode(name, value), r))
-                          case BranchNode(_, seq)   => Some((BranchNode(name, seq), r))
-                        }
-                      } else
-                        Some((BranchNode(name, buf.toList), r))
+                    case NormalActionAST(pos, name) => Some((BranchNode(name, buf.toList), r))
                     case SpecialActionAST(pos, "infixl") =>
                       val tree =
                         buf(1).asInstanceOf[BranchNode].nodes.foldLeft(buf.head) {
