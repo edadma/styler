@@ -1,4 +1,4 @@
-package xyz.hyperreal.pargen
+package xyz.hyperreal.styler
 
 import scala.util.parsing.input.Position
 

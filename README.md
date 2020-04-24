@@ -1,4 +1,4 @@
-pargen
+styler
 ======
 
 Recursive descent parser generator.

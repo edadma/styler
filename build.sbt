@@ -1,4 +1,4 @@
-name := "pargen"
+name := "styler"
 
 version := "0.1.0"
 

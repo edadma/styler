@@ -2,7 +2,7 @@ package xyz.hyperreal
 
 import scala.util.parsing.input.{Position, Reader}
 
-package object pargen {
+package object styler {
 
   type Input = Reader[Char]
 

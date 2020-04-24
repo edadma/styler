@@ -1,4 +1,4 @@
-package xyz.hyperreal.pargen
+package xyz.hyperreal.styler
 
 abstract class Node
 case class LiftNode(n: Node)                         extends Node
