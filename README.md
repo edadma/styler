@@ -1,4 +1,4 @@
 styler
 ======
 
-Recursive descent parser generator.
+Universal code formatter.
