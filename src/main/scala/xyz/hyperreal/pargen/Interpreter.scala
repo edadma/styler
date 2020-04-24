@@ -104,6 +104,7 @@ object Interpreter {
             }
 
           sequence(seq, r)
+        case AddAST(pos, e)  => parse(e, r)
         case LiftAST(pos, e) => nodewrap(parse(e, r), LiftNode)
         case LiteralAST(pos, s) =>
           matches(r, s) map (rest => (LiteralNode(s), skipSpace(rest))) // todo: problem(pos, "literal mismatch")

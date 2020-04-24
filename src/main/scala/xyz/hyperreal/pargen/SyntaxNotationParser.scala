@@ -45,6 +45,9 @@ object SyntaxNotationParser extends RegexParsers {
       pos ~ """"[^"\n]*"|'[^'\n]'""".r ^^ {
         case p ~ s => LiteralAST(p, s.substring(1, s.length - 1))
       } |
+      pos ~ """`[^`\n]*`""".r ^^ {
+        case p ~ s => AddAST(p, LiteralAST(p, s.substring(1, s.length - 1)))
+      } |
       pos ~ ("[" ~> pattern <~ "]") ^^ {
         case pos ~ pat => OptionAST(pos, pat)
       } |
@@ -53,6 +56,9 @@ object SyntaxNotationParser extends RegexParsers {
       } |
       pos ~ ("^" ~> elem) ^^ {
         case pos ~ pat => LiftAST(pos, pat)
+      } |
+      pos ~ ("+" ~> elem) ^^ {
+        case pos ~ pat => AddAST(pos, pat)
       } |
       "(" ~> pattern <~ ")"
 

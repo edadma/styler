@@ -14,6 +14,7 @@ case class IdentifierAST(pos: Position, s: String)                      extends 
 case class OptionAST(pos: Position, pattern: PatternAST)                extends PatternAST
 case class RepeatAST(pos: Position, pattern: PatternAST)                extends PatternAST
 case class LiftAST(pos: Position, elem: PatternAST)                     extends PatternAST
+case class AddAST(pos: Position, elem: PatternAST)                      extends PatternAST
 
 abstract class ActionAST                                 extends AST
 case class NormalActionAST(pos: Position, name: String)  extends ActionAST
