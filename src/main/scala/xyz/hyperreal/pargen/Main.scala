@@ -15,9 +15,15 @@ object Main extends App {
       |
       |term = factor { (`*` | `/`) factor } /infixl.
       |
-      |factor = number
-      |       | ident
-      |       | "(" expression ")" <group>.
+      |factor = unary "^" exp /infix
+      |       | unary
+      |
+      |unary = `-` primary
+      |      | primary
+      |
+      |primary = number
+      |        | ident
+      |        | "(" expression ")" <group>.
       |""".stripMargin
 //    """
 //      |value = number | string | object | array | "true" | "false" | "null".
