@@ -49,13 +49,20 @@ object Interpreter {
         case SequenceAST(seq, action) =>
           val buf = new ListBuffer[Node]
 
+          def lift =
+            buf.toList flatMap {
+              case LiftNode(BranchNode(_, seq)) => seq
+              case _: LiftNode                  => problem(null, "can only lift a sequence")
+              case e                            => List(e)
+            }
+
           @scala.annotation.tailrec
           def sequence(s: Seq[PatternAST], r: Input): Option[(Node, Input)] =
             s match {
               case Nil =>
                 if (action isDefined) {
                   action.get match {
-                    case NormalActionAST(pos, name) => Some((BranchNode(name, buf.toList), r))
+                    case NormalActionAST(pos, name) => Some((BranchNode(name, lift), r))
                     case SpecialActionAST(pos, "infixl") =>
                       val tree =
                         buf(1).asInstanceOf[BranchNode].nodes.foldLeft(buf.head) {
@@ -76,15 +83,8 @@ object Interpreter {
                   }
                 } else if (buf.length == 1)
                   Some((buf.head, r))
-                else {
-                  val lifted =
-                    buf.toList flatMap {
-                      case LiftNode(BranchNode(_, seq)) => seq
-                      case _: LiftNode                  => problem(null, "can only lift a sequence")
-                      case e                            => List(e)
-                    }
-                  Some(BranchNode("seq", lifted), r)
-                }
+                else
+                  Some(BranchNode("seq", lift), r)
               case h :: t =>
                 parse(h, r) match {
                   case None => None

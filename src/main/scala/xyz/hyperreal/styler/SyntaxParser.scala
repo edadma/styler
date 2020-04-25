@@ -3,7 +3,7 @@ package xyz.hyperreal.styler
 import scala.util.parsing.combinator.RegexParsers
 import scala.util.parsing.input.{Position, Positional}
 
-object SyntaxNotationParser extends RegexParsers {
+object SyntaxParser extends RegexParsers {
 
   def pos: Parser[Position] = positioned(success(new Positional {})) ^^ { _.pos }
 

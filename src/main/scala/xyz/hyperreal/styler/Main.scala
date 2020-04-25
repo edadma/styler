@@ -10,37 +10,38 @@ object Main extends App {
 //      |b = c { -"," c } /flatten.
 //      |c = number | a.
 //      |""".stripMargin
-    """
-      |expression = term { (`+` | `-`) term } /infixl.
-      |
-      |term = factor { (`*` | `/`) factor } /infixl.
-      |
-      |factor = unary "^" exp /infix
-      |       | unary
-      |
-      |unary = `-` primary
-      |      | primary
-      |
-      |primary = number
-      |        | ident
-      |        | "(" expression ")" <group>.
-      |""".stripMargin
+
 //    """
-//      |value = number | string | object | array | "true" | "false" | "null".
+//      |expression = term { (`+` | `-`) term } /infixl.
 //      |
-//      |object = "{" members "}" <object> | "{" "}" <object>.
+//      |term = factor { (`*` | `/`) factor } /infixl.
 //      |
-//      |members = member { "," member } /flatten.
+//      |factor = unary "^" exp /infix
+//      |       | unary
 //      |
-//      |member = string ":" value <kv>.
+//      |unary = `-` primary
+//      |      | primary
 //      |
-//      |array = "[" elements "]" <array> | "[" "]" <array>.
-//      |
-//      |elements = value { "," value } /flatten.
+//      |primary = number
+//      |        | ident
+//      |        | "(" expression ")" <group>.
 //      |""".stripMargin
-  val ast = SyntaxNotationParser(input)
+    """
+      |value = number | string | object | array | "true" | "false" | "null".
+      |
+      |object = "{" ^members "}" <object> | "{" "}" <object>.
+      |
+      |members = member { "," member } /flatten.
+      |
+      |member = string ":" value.
+      |
+      |array = "[" ^elements "]" <array> | "[" "]" <array>.
+      |
+      |elements = value { "," value } /flatten.
+      |""".stripMargin
+  val ast = SyntaxParser(input)
 
   println(ast)
-  println(Interpreter(ast, new CharSequenceReader(""" (3 + 4) * 5 """))) //{"a": [1], "b": []}
+  println(Interpreter(ast, new CharSequenceReader(""" {"a": [1], "b": []} """))) // (3 + 4) * 5
 
 }
