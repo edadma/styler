@@ -12,12 +12,12 @@ case class FunctionDeclaration(pos: Position, name: String, body: CasesFAST)  ex
 case class CasesFAST(cases: Seq[(PatternFAST, StatementFAST)]) extends FAST
 case class ValueFAST(v: Any)                                   extends FAST
 
-abstract class PatternFAST                                               extends FAST
-trait SimplePattern                                                      extends PatternFAST
-case class VariablePattern(name: String)                                 extends PatternFAST with SimplePattern
-case class StringPattern(s: String)                                      extends PatternFAST with SimplePattern
-case class LeafPattern(typ: SimplePattern, value: SimplePattern)         extends PatternFAST
-case class BranchPattern(typ: SimplePattern, branches: Seq[PatternFAST]) extends PatternFAST
+abstract class PatternFAST                                                              extends FAST
+trait SimplePattern                                                                     extends PatternFAST
+case class VariablePattern(pos: Position, name: String)                                 extends PatternFAST with SimplePattern
+case class StringPattern(pos: Position, s: String)                                      extends PatternFAST with SimplePattern
+case class LeafPattern(pos: Position, typ: SimplePattern, value: SimplePattern)         extends PatternFAST
+case class BranchPattern(pos: Position, typ: SimplePattern, branches: Seq[PatternFAST]) extends PatternFAST
 
 abstract class StatementFAST                                  extends FAST
 case class BlockStatement(stmts: Seq[StatementFAST])          extends StatementFAST
