@@ -9,10 +9,31 @@ object FormatParser extends RegexParsers {
 
   def format: Parser[FormatFAST] = rep1(declaration) ^^ FormatFAST
 
-  def declaration: Parser[ProductionSAST] =
-    pos ~ name ~ "=" ~ pattern ~ "." ^^ {
-      case pos ~ n ~ _ ~ pat ~ _ => ProductionSAST(pos, n, pat)
+  def declaration: Parser[DeclarationFAST] =
+    variable | function
+
+  def variable: Parser[VariableDeclaration] =
+    pos ~ name ~ "=" ~ value ^^ {
+      case p ~ n ~ _ ~ v => VariableDeclaration(p, n, v)
     }
+
+  def function: Parser[FunctionDeclaration] =
+    pos ~ name ~ ":" ~ cases ^^ {
+      case p ~ n ~ _ ~ a => FunctionDeclaration(p, n, cases)
+    }
+
+  def cases: Parser[CasesFAST] =
+    patterm ~ statement ^^ {
+      case p ~ s => CasesFAST(List(p, s))
+    }
+
+  def value =
+    pos ~ """"[^"\n]*"|'[^'\n]'""".r ^^ {
+      case p ~ s => ValueFAST(p, s.substring(1, s.length - 1))
+    } |
+      pos ~ """(?:\d+\.\d+|\.\d+|\d+)(?:(?:e|E)(?:\+|-)?\d+)?""".r ^^ {
+        case p ~ n => ValueFAST(p, n.toDouble)
+      }
 
   def name: Parser[String] = "[A-Za-z_][A-Za-z0-9_]*".r
 
@@ -62,13 +83,8 @@ object FormatParser extends RegexParsers {
       } |
       "(" ~> pattern <~ ")"
 
-  //  def number: Parser[LiteralAST] =
-  //    pos ~ """\d+(\.\d*)?""".r ^^ {
-  //      case p ~ n => LiteralAST(p, "number", n)
-  //    }
-
-  def apply(input: String): SyntaxSAST =
-    parseAll(syntax, input) match {
+  def apply(input: String): FormatFAST =
+    parseAll(format, input) match {
       case Success(result, _) => result
       case failure: NoSuccess => scala.sys.error(failure.msg)
     }

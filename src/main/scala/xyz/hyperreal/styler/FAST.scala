@@ -5,11 +5,12 @@ import scala.util.parsing.input.Position
 abstract class FAST
 case class FormatFAST(decls: DeclarationFAST) extends FAST
 
-abstract class DeclarationFAST                                                         extends FAST { val name: String }
-case class VariableDeclaration(name: String, value: ValueFAST)                         extends DeclarationFAST
-case class FunctionDeclaration(name: String, cases: Seq[(PatternFAST, StatementFAST)]) extends DeclarationFAST
+abstract class DeclarationFAST                                                extends FAST { val name: String; val pos: Position }
+case class VariableDeclaration(pos: Position, name: String, value: ValueFAST) extends DeclarationFAST
+case class FunctionDeclaration(pos: Position, name: String, body: CasesFAST)  extends DeclarationFAST
 
-case class ValueFAST(v: Any) extends FAST
+case class CasesFAST(cases: Seq[(PatternFAST, StatementFAST)]) extends FAST
+case class ValueFAST(v: Any)                                   extends FAST
 
 abstract class PatternFAST                                               extends FAST
 trait SimplePattern                                                      extends PatternFAST
