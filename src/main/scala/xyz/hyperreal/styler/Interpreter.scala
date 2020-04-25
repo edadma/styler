@@ -15,27 +15,27 @@ object Interpreter {
       "string" -> stringMatcher
     )
 
-  def apply(syntax: SyntaxAST, r: Input): Option[Node] = {
-    val rules = new mutable.HashMap[String, PatternAST]
+  def apply(syntax: SyntaxSAST, r: Input): Option[Elem] = {
+    val rules = new mutable.HashMap[String, PatternSAST]
 
-    def parse(e: PatternAST, r: Input): Option[(Node, Input)] =
+    def parse(e: PatternSAST, r: Input): Option[(Elem, Input)] =
       e match {
-        case RepeatAST(pos, pattern) =>
-          val buf = new ListBuffer[Node]
+        case RepeatSAST(pos, pattern) =>
+          val buf = new ListBuffer[Elem]
 
           @scala.annotation.tailrec
-          def repeat(r: Input): (BranchNode, Input) =
+          def repeat(r: Input): (BranchElem, Input) =
             parse(pattern, r) match {
-              case None => (BranchNode("rep", buf.toList), r)
+              case None => (BranchElem("rep", buf.toList), r)
               case Some((n, r)) =>
                 buf += n
                 repeat(r)
             }
 
           Some(repeat(r))
-        case AlternatesAST(alts) =>
+        case AlternatesSAST(alts) =>
           @scala.annotation.tailrec
-          def alternative(alts: Seq[PatternAST]): Option[(Node, Input)] =
+          def alternative(alts: Seq[PatternSAST]): Option[(Elem, Input)] =
             alts match {
               case Nil => None
               case h :: t =>
@@ -46,50 +46,50 @@ object Interpreter {
             }
 
           alternative(alts)
-        case SequenceAST(seq, action) =>
-          val buf = new ListBuffer[Node]
+        case SequenceSAST(seq, action) =>
+          val buf = new ListBuffer[Elem]
 
           def lift =
             buf.toList flatMap {
-              case LiftNode(BranchNode(_, seq)) => seq
-              case _: LiftNode                  => problem(null, "can only lift a sequence")
+              case LiftElem(BranchElem(_, seq)) => seq
+              case _: LiftElem                  => problem(null, "can only lift a sequence")
               case e                            => List(e)
             }
 
           @scala.annotation.tailrec
-          def sequence(s: Seq[PatternAST], r: Input): Option[(Node, Input)] =
+          def sequence(s: Seq[PatternSAST], r: Input): Option[(Elem, Input)] =
             s match {
               case Nil =>
                 if (action isDefined) {
                   action.get match {
-                    case NormalActionAST(pos, name) => Some((BranchNode(name, lift), r))
-                    case SpecialActionAST(pos, "infixl") =>
+                    case NormalActionSAST(pos, name) => Some((BranchElem(name, lift), r))
+                    case SpecialActionSAST(pos, "infixl") =>
                       val tree =
-                        buf(1).asInstanceOf[BranchNode].nodes.foldLeft(buf.head) {
-                          case (a, BranchNode("seq", Seq(LiteralNode(op), b))) =>
-                            BranchNode(op, Seq(a, b))
+                        buf(1).asInstanceOf[BranchElem].nodes.foldLeft(buf.head) {
+                          case (a, BranchElem("seq", Seq(LiteralElem(op), b))) =>
+                            BranchElem(op, Seq(a, b))
                           case _ => problem(pos, "invalid pattern for 'infixl' special action")
                         }
 
                       Some((tree, r))
-                    case SpecialActionAST(pos, "flatten") =>
-                      def flatten(l: List[Node]): List[Node] =
+                    case SpecialActionSAST(pos, "flatten") =>
+                      def flatten(l: List[Elem]): List[Elem] =
                         l flatMap {
-                          case BranchNode("rep", nodes) => nodes
+                          case BranchElem("rep", nodes) => nodes
                           case n                        => List(n)
                         }
 
-                      Some((BranchNode("seq", flatten(buf.toList)), r))
+                      Some((BranchElem("seq", flatten(buf.toList)), r))
                   }
                 } else if (buf.length == 1)
                   Some((buf.head, r))
                 else
-                  Some(BranchNode("seq", lift), r)
+                  Some(BranchElem("seq", lift), r)
               case h :: t =>
                 parse(h, r) match {
                   case None => None
                   case Some((n, r)) =>
-                    if (!h.isInstanceOf[LiteralAST])
+                    if (!h.isInstanceOf[LiteralSAST])
                       buf += n
 
                     sequence(t, r)
@@ -97,17 +97,17 @@ object Interpreter {
             }
 
           sequence(seq, r)
-        case AddAST(pos, e)  => parse(e, r)
-        case LiftAST(pos, e) => nodewrap(parse(e, r), LiftNode)
-        case LiteralAST(pos, s) =>
-          matches(r, s) map (rest => (LiteralNode(s), skipSpace(rest))) // todo: problem(pos, "literal mismatch")
-        case IdentifierAST(pos, s) =>
+        case AddSAST(pos, e)  => parse(e, r)
+        case LiftSAST(pos, e) => nodewrap(parse(e, r), LiftElem)
+        case LiteralSAST(pos, s) =>
+          matches(r, s) map (rest => (LiteralElem(s), skipSpace(rest))) // todo: problem(pos, "literal mismatch")
+        case IdentifierSAST(pos, s) =>
           rules get s match {
             case None =>
               builtin get s match {
                 case None => problem(pos, s"unknown rule: $s")
                 case Some(matcher) =>
-                  matcher(r) map { case (m, rest) => (LeafNode(s, m), skipSpace(rest)) } // todo: problem(pos, s"failed to match a '$s'")
+                  matcher(r) map { case (m, rest) => (LeafElem(s, m), skipSpace(rest)) } // todo: problem(pos, s"failed to match a '$s'")
               }
             case Some(rule) => parse(rule, r)
           }
@@ -129,7 +129,7 @@ object Interpreter {
     }
   }
 
-  private def nodewrap(res: Option[(Node, Input)], wrapper: Node => Node) =
+  private def nodewrap(res: Option[(Elem, Input)], wrapper: Elem => Elem) =
     res map {
       case (n, i) => (wrapper(n), i)
     }

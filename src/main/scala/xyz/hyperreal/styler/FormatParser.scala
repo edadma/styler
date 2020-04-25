@@ -3,11 +3,11 @@ package xyz.hyperreal.styler
 import scala.util.parsing.combinator.RegexParsers
 import scala.util.parsing.input.{Position, Positional}
 
-object SyntaxParser extends RegexParsers {
+object FormatParser extends RegexParsers {
 
   def pos: Parser[Position] = positioned(success(new Positional {})) ^^ { _.pos }
 
-  def syntax: Parser[SyntaxSAST] = rep1(production) ^^ SyntaxSAST
+  def format: Parser[SyntaxSAST] = rep1(production) ^^ SyntaxSAST
 
   def production: Parser[ProductionSAST] =
     pos ~ name ~ "=" ~ pattern ~ "." ^^ {
@@ -62,10 +62,10 @@ object SyntaxParser extends RegexParsers {
       } |
       "(" ~> pattern <~ ")"
 
-//  def number: Parser[LiteralAST] =
-//    pos ~ """\d+(\.\d*)?""".r ^^ {
-//      case p ~ n => LiteralAST(p, "number", n)
-//    }
+  //  def number: Parser[LiteralAST] =
+  //    pos ~ """\d+(\.\d*)?""".r ^^ {
+  //      case p ~ n => LiteralAST(p, "number", n)
+  //    }
 
   def apply(input: String): SyntaxSAST =
     parseAll(syntax, input) match {

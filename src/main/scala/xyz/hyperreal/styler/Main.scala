@@ -33,13 +33,13 @@ object Main extends App {
       |
       |members = member { "," member } /flatten.
       |
-      |member = string ":" value.
+      |member = string ":" value <member>.
       |
       |array = "[" ^elements "]" <array> | "[" "]" <array>.
       |
       |elements = value { "," value } /flatten.
       |""".stripMargin
-  val ast = SyntaxParser(input)
+  val ast = FormatParser(input)
 
   println(ast)
   println(Interpreter(ast, new CharSequenceReader(""" {"a": [1], "b": []} """))) // (3 + 4) * 5
