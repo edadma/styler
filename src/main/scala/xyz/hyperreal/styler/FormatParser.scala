@@ -7,9 +7,9 @@ object FormatParser extends RegexParsers {
 
   def pos: Parser[Position] = positioned(success(new Positional {})) ^^ { _.pos }
 
-  def format: Parser[SyntaxSAST] = rep1(production) ^^ SyntaxSAST
+  def format: Parser[FormatFAST] = rep1(declaration) ^^ FormatFAST
 
-  def production: Parser[ProductionSAST] =
+  def declaration: Parser[ProductionSAST] =
     pos ~ name ~ "=" ~ pattern ~ "." ^^ {
       case pos ~ n ~ _ ~ pat ~ _ => ProductionSAST(pos, n, pat)
     }
