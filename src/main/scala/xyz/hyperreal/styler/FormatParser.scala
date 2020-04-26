@@ -43,19 +43,7 @@ object FormatParser extends RegexParsers {
       case p ~ n ~ Some(args) => ApplyStatement(p, n, args)
     }
 
-  def variablePattern: Parser[VariablePattern] =
-    pos ~ name ^^ {
-      case p ~ n => VariablePattern(p, n)
-    }
-
   def string: Parser[String] = """"[^"\n]*"|'[^'\n]*'""".r ^^ (s => s.substring(1, s.length - 1))
-
-  def stringPattern: Parser[StringPattern] =
-    pos ~ string ^^ {
-      case p ~ s => StringPattern(p, s)
-    }
-
-  def simplePattern: Parser[SimplePattern] = variablePattern | stringPattern
 
   def pattern: Parser[PatternFAST] = alternate
 
@@ -66,11 +54,16 @@ object FormatParser extends RegexParsers {
     }
 
   def primaryPattern: Parser[PatternFAST] =
-    variablePattern |
-      pos ~ "<" ~ simplePattern ~ "," ~ simplePattern ~ ">" ^^ {
+    pos ~ name ^^ {
+      case p ~ n => VariablePattern(p, n)
+    } |
+      pos ~ string ^^ {
+        case p ~ s => StringPattern(p, s)
+      } |
+      pos ~ "<" ~ pattern ~ "," ~ pattern ~ ">" ^^ {
         case p ~ _ ~ n ~ _ ~ v ~ _ => LeafPattern(p, n, v)
       } |
-      pos ~ "[" ~ simplePattern ~ "," ~ repsep(pattern, ",") ~ "]" ^^ {
+      pos ~ "[" ~ pattern ~ "," ~ repsep(pattern, ",") ~ "]" ^^ {
         case p ~ _ ~ n ~ _ ~ bs ~ _ => BranchPattern(p, n, bs)
       } |
       "(" ~> pattern <~ ")"
@@ -122,7 +115,9 @@ object FormatParser extends RegexParsers {
   def apply(input: String): FormatFAST =
     parseAll(format, input) match {
       case Success(result, _) => result
-      case failure: NoSuccess => scala.sys.error(failure.msg)
+      case failure: NoSuccess =>
+        println(failure.msg)
+        sys.exit
     }
 
 }

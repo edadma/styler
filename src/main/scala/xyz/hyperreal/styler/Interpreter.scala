@@ -51,23 +51,44 @@ object Interpreter {
 
             val arg = if (args.length == 1) args.head else args
 
-            def unify(pat: PatternFAST, value: Any): Boolean =
+            def unify(pat: PatternFAST, value: Any, vars: Map[String, Any]): Option[Map[String, Any]] =
               (pat, value) match {
-                case (StringPattern(pos, s), value: String) => s == value
+                case (StringPattern(pos, s), value: String) =>
+                  if (s == value)
+                    Some(vars)
+                  else
+                    None
                 case (VariablePattern(pos, name), value) =>
                   locals get name match {
                     case Some(_) => problem(pos, "local variable already used")
-                    case None    => locals(name) = value
+                    case None    => Some(vars + (name -> value))
                   }
-
-                  true
                 case (LeafPattern(pos, typ, value), LeafElem(etyp, evalue)) =>
-                  unify(typ, etyp) && unify(value, evalue)
+                  unify(typ, etyp, vars) match {
+                    case None    => None
+                    case Some(m) => unify(value, evalue, m)
+                  }
                 case (BranchPattern(pos, typ, branches), BranchElem(etyp, ebranches)) =>
-                  unify(typ, etyp) && branches.length == ebranches.length && (branches zip ebranches forall {
-                    case (p, e) => unify(p, e)
-                  })
-                case _ => false
+                  unify(typ, etyp, vars) match {
+                    case None => None
+                    case Some(m) =>
+                      if (branches.length == ebranches.length) {
+                        def unifyList(l: Seq[(PatternFAST, Any)], vars: Map[String, Any]): Option[Map[String, Any]] =
+                          l match {
+                            case Nil => Some(vars)
+                            case (p, e) :: tail =>
+                              unify(p, e, vars) match {
+                                case None => unifyList(tail, vars)
+                                case r    => r
+                              }
+                          }
+
+                        unifyList(branches zip ebranches, m)
+                      } else
+                        None
+                  }
+                case (AlternatesPattern(alts), _) => alts.exists(p => unify(p, value))
+                case _                            => false
               }
 
             def matchCases(cases: Seq[(PatternFAST, StatementFAST)]): Unit =

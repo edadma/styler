@@ -16,14 +16,13 @@ abstract class ExpressionFAST                              extends FAST { val po
 case class LiteralExpression(pos: Position, literal: Any)  extends ExpressionFAST
 case class VariableExpression(pos: Position, name: String) extends ExpressionFAST
 
-abstract class PatternFAST                                                              extends FAST
-trait SimplePattern                                                                     extends PatternFAST
-case class AlternatesPattern(alts: Seq[PatternFAST])                                    extends PatternFAST { val pos: Position = null }
-case class TuplePattern(pos: Position, elems: Seq[PatternFAST])                         extends PatternFAST
-case class VariablePattern(pos: Position, name: String)                                 extends PatternFAST with SimplePattern
-case class StringPattern(pos: Position, s: String)                                      extends PatternFAST with SimplePattern
-case class LeafPattern(pos: Position, typ: SimplePattern, value: SimplePattern)         extends PatternFAST
-case class BranchPattern(pos: Position, typ: SimplePattern, branches: Seq[PatternFAST]) extends PatternFAST
+abstract class PatternFAST                                                            extends FAST
+case class AlternatesPattern(alts: Seq[PatternFAST])                                  extends PatternFAST { val pos: Position = null }
+case class TuplePattern(pos: Position, elems: Seq[PatternFAST])                       extends PatternFAST
+case class VariablePattern(pos: Position, name: String)                               extends PatternFAST
+case class StringPattern(pos: Position, s: String)                                    extends PatternFAST
+case class LeafPattern(pos: Position, typ: PatternFAST, value: PatternFAST)           extends PatternFAST
+case class BranchPattern(pos: Position, typ: PatternFAST, branches: Seq[PatternFAST]) extends PatternFAST
 
 abstract class StatementFAST                                                      extends FAST
 case class BlockStatement(stmts: Seq[StatementFAST])                              extends StatementFAST
