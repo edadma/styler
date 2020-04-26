@@ -63,6 +63,13 @@ object Interpreter {
           case _ => problem(pos, "function not declared")
         }
 
+      def declare(decl: DeclarationFAST): Unit = {
+        declsMap get decl.name match {
+          case Some(_) => problem(decl.pos, "name already used")
+          case None    => declsMap(decl.name) = decl
+        }
+      }
+
       ast match {
         case FormatFAST(decls) =>
           decls foreach apply
@@ -71,13 +78,11 @@ object Interpreter {
             case _                                      =>
           }
           call(null, "printElem", Seq(elem))
-        case decl @ VariableDeclaration(pos, name, value, _) =>
-          declsMap get name match {
-            case Some(_) => problem(pos, "name already used")
-            case None    => declsMap(name) = decl
-          }
+        case decl: DeclarationFAST => declare(decl)
       }
     }
+
+    apply(ast)
   }
 
 }
