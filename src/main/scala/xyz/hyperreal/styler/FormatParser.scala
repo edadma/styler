@@ -48,7 +48,7 @@ object FormatParser extends RegexParsers {
       case p ~ n => VariablePattern(p, n)
     }
 
-  def string: Parser[String] = """"[^"\n]*"|'[^'\n]*'""".r
+  def string: Parser[String] = """"[^"\n]*"|'[^'\n]*'""".r ^^ (s => s.substring(1, s.length - 1))
 
   def stringPattern: Parser[StringPattern] =
     pos ~ string ^^ {
@@ -64,8 +64,8 @@ object FormatParser extends RegexParsers {
       }
 
   def expression: Parser[ExpressionFAST] =
-    pos ~ """"[^"\n]*"|'[^'\n]*'""".r ^^ {
-      case p ~ s => LiteralExpression(p, s.substring(1, s.length - 1))
+    pos ~ string ^^ {
+      case p ~ s => LiteralExpression(p, s)
     } |
       pos ~ """(?:\d+\.\d+|\.\d+|\d+)(?:(?:e|E)(?:\+|-)?\d+)?""".r ^^ {
         case p ~ n => LiteralExpression(p, n.toDouble)

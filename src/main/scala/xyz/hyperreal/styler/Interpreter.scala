@@ -17,18 +17,25 @@ object Interpreter {
       }
     val declsMap = mutable.HashMap[String, DeclarationFAST](builtinDecls: _*)
 
-    def apply(ast: FAST): Unit = {
-      def eval(expr: ExpressionFAST): Any =
-        expr match {
-          case LiteralExpression(literal) => literal
-          case VariableExpression(pos, name) =>
-            declsMap get name match {
-              case Some(VariableDeclaration(_, _, _, value)) => value
-              case None                                      => problem(pos, "variable not found")
-            }
-          case _ =>
-        }
+    def eval(expr: ExpressionFAST, locals: mutable.HashMap[String, Any] = null): Any =
+      expr match {
+        case LiteralExpression(literal) => literal
+        case VariableExpression(pos, name) =>
+          declsMap get name match {
+            case Some(VariableDeclaration(_, _, _, value)) => value
+            case None =>
+              if (locals eq null)
+                problem(pos, "variable not found")
+              else
+                locals get name match {
+                  case Some(x) => x
+                  case None    => problem(pos, "variable not found")
+                }
+          }
+        case _ =>
+      }
 
+    def apply(ast: FAST): Unit = {
       def call(pos: Position, func: String, args: Seq[Any]): Unit =
         declsMap get func match {
           case Some(FunctionDeclaration(_, _, cases)) =>
@@ -36,7 +43,7 @@ object Interpreter {
 
             def execute(stmt: StatementFAST): Unit =
               stmt match {
-                case ApplyStatement(pos, func, args) => call(pos, func, args map eval)
+                case ApplyStatement(pos, func, args) => call(pos, func, args map (a => eval(a, locals)))
                 case BlockStatement(stmts)           => stmts foreach execute
                 case _                               =>
               }
@@ -53,8 +60,9 @@ object Interpreter {
                   }
 
                   true
-                case (LeafPattern(pos, typ, value), LeafElem(etyp, evalue)) => unify(typ, etyp) && unify(value, evalue)
-                case _                                                      => false
+                case (LeafPattern(pos, typ, value), LeafElem(etyp, evalue)) =>
+                  unify(typ, etyp) && unify(value, evalue)
+                case _ => false
               }
 
             def matchCases(cases: Seq[(PatternFAST, StatementFAST)]): Unit =
