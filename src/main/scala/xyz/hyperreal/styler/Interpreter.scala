@@ -5,7 +5,7 @@ import scala.util.parsing.input.Position
 
 object Interpreter {
 
-  val builtins =
+  private val builtins =
     List[(String, Seq[Any] => Unit)](
       "print" -> (args => println(args mkString ", "))
     )
@@ -29,17 +29,29 @@ object Interpreter {
           case _ =>
         }
 
-      def execute(stmt: StatementFAST): Unit =
-        stmt match {
-          case ApplyStatement(pos, func, args) => call(pos, func, args map eval)
-          case BlockStatement(stmts)           => stmts foreach execute
-          case _                               =>
-        }
-
       def call(pos: Position, func: String, args: Seq[Any]): Unit =
         declsMap get func match {
-          case Some(FunctionDeclaration(_, _, body)) =>
-          case _                                     => problem(pos, "function not declared")
+          case Some(FunctionDeclaration(_, _, cases)) =>
+            val locals = new mutable.HashMap[String, Any]
+
+            def execute(stmt: StatementFAST): Unit =
+              stmt match {
+                case ApplyStatement(pos, func, args) => call(pos, func, args map eval)
+                case BlockStatement(stmts)           => stmts foreach execute
+                case _                               =>
+              }
+
+            val arg = if (args.length == 1) args.head else args
+
+            def unify( pat: PatternFAST )
+            def matchCases(cases: Seq[(PatternFAST, StatementFAST)]): Unit =
+              cases match {
+                case Nil               => problem(pos, "none of the cases matched")
+                case Some((pat, stmt)) =>
+              }
+
+            matchCases(cases)
+          case _ => problem(pos, "function not declared")
         }
 
       ast match {

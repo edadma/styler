@@ -8,10 +8,9 @@ case class FormatFAST(decls: List[DeclarationFAST]) extends FAST
 abstract class DeclarationFAST extends FAST { val name: String; val pos: Position }
 case class VariableDeclaration(pos: Position, name: String, init: ExpressionFAST, var value: Any = null)
     extends DeclarationFAST
-case class FunctionDeclaration(pos: Position, name: String, body: CasesFAST) extends DeclarationFAST
-case class NativeDeclaration(name: String, func: Seq[Any] => Unit)           extends DeclarationFAST { val pos: Position = null }
-
-case class CasesFAST(cases: Seq[(PatternFAST, StatementFAST)]) extends FAST
+case class FunctionDeclaration(pos: Position, name: String, body: Seq[(PatternFAST, StatementFAST)])
+    extends DeclarationFAST
+case class NativeDeclaration(name: String, func: Seq[Any] => Unit) extends DeclarationFAST { val pos: Position = null }
 
 abstract class ExpressionFAST                              extends FAST
 case class LiteralExpression(literal: Any)                 extends ExpressionFAST
@@ -19,6 +18,7 @@ case class VariableExpression(pos: Position, name: String) extends ExpressionFAS
 
 abstract class PatternFAST                                                              extends FAST
 trait SimplePattern                                                                     extends PatternFAST
+case class TuplePattern(pos: Position, elems: Seq[PatternFAST])                         extends PatternFAST
 case class VariablePattern(pos: Position, name: String)                                 extends PatternFAST with SimplePattern
 case class StringPattern(pos: Position, s: String)                                      extends PatternFAST with SimplePattern
 case class LeafPattern(pos: Position, typ: SimplePattern, value: SimplePattern)         extends PatternFAST
