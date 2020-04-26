@@ -12,21 +12,6 @@ object Main extends App {
 //      |""".stripMargin
 
 //    """
-//      |expression = term { (`+` | `-`) term } /infixl.
-//      |
-//      |term = factor { (`*` | `/`) factor } /infixl.
-//      |
-//      |factor = unary "^" exp /infix
-//      |       | unary
-//      |
-//      |unary = `-` primary
-//      |      | primary
-//      |
-//      |primary = number
-//      |        | ident
-//      |        | "(" expression ")" <group>.
-//      |""".stripMargin
-//    """
 //      |value = number | string | object | array | "true" | "false" | "null".
 //      |
 //      |object = "{" ^members "}" <object> | "{" "}" <object>.
@@ -44,17 +29,49 @@ object Main extends App {
 //  println(ast)
 //  println(Interpreter(ast, new CharSequenceReader(""" {"a": [1], "b": []} """))) // (3 + 4) * 5
 
-  val input = "123"
+//  val input = "123"
+//
+//  val syntax =
+//    """
+//      |input = number.
+//      |""".stripMargin
+//  val sast = SyntaxParser(syntax)
+//
+////  println(sast)
+//
+//  val ast = StylerParser(sast, new CharSequenceReader(input)) getOrElse (sys.error("didn't parse"))
+//
+////  println(ast)
+//
+//  val format =
+//    """
+//      |printElem: {
+//      |  ['number' n] -> print(n);
+//      |}
+//      |""".stripMargin
+  val input = "a+b"
 
   val syntax =
     """
-      |input = number.
+      |expression = term { (`+` | `-`) term } /infixl.
+      |
+      |term = factor { (`*` | `/`) factor } /infixl.
+      |
+      |factor = unary "^" exp /infix
+      |       | unary.
+      |
+      |unary = `-` primary
+      |      | primary.
+      |
+      |primary = number
+      |        | ident
+      |        | "(" expression ")" <group>.
       |""".stripMargin
   val sast = SyntaxParser(syntax)
 
-  println(sast)
+  //  println(sast)
 
-  val ast = StylerParser(sast, new CharSequenceReader(input)) getOrElse (sys.error("didn't parse"))
+  val ast = StylerParser(sast, new CharSequenceReader(input)) getOrElse sys.error("didn't parse")
 
   println(ast)
 
@@ -62,12 +79,18 @@ object Main extends App {
     """
       |printElem: {
       |  ['number' n] -> print(n);
+      |  ['ident' v] -> print(v);
+      |  ('+' left right) -> {
+      |    printElem(left);
+      |    print(' plus ');
+      |    printElem(right);
+      |  }
       |}
       |""".stripMargin
 
   val fast = FormatParser(format)
 
-  println(fast)
+//  println(fast)
   Interpreter(fast, ast)
 
 }

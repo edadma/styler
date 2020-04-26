@@ -65,7 +65,7 @@ object StylerParser {
                     case NormalActionSAST(pos, name) => Some((BranchElem(name, lift), r))
                     case SpecialActionSAST(pos, "infixl") =>
                       val tree =
-                        buf(1).asInstanceOf[BranchElem].nodes.foldLeft(buf.head) {
+                        buf(1).asInstanceOf[BranchElem].branches.foldLeft(buf.head) {
                           case (a, BranchElem("seq", Seq(LiteralElem(op), b))) =>
                             BranchElem(op, Seq(a, b))
                           case _ => problem(pos, "invalid pattern for 'infixl' special action")

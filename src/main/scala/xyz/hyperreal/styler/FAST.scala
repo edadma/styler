@@ -12,8 +12,8 @@ case class FunctionDeclaration(pos: Position, name: String, body: Seq[(PatternFA
     extends DeclarationFAST
 case class NativeDeclaration(name: String, func: Seq[Any] => Unit) extends DeclarationFAST { val pos: Position = null }
 
-abstract class ExpressionFAST                              extends FAST
-case class LiteralExpression(literal: Any)                 extends ExpressionFAST
+abstract class ExpressionFAST                              extends FAST { val pos: Position }
+case class LiteralExpression(pos: Position, literal: Any)  extends ExpressionFAST
 case class VariableExpression(pos: Position, name: String) extends ExpressionFAST
 
 abstract class PatternFAST                                                              extends FAST

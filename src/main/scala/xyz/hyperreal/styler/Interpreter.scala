@@ -7,7 +7,7 @@ object Interpreter {
 
   private val builtins =
     List[(String, Seq[Any] => Unit)](
-      "print" -> (args => println(args mkString ", "))
+      "print" -> (args => print(args mkString ", "))
     )
 
   def apply(ast: FAST, elem: Elem): Unit = {
@@ -19,7 +19,7 @@ object Interpreter {
 
     def eval(expr: ExpressionFAST, locals: mutable.HashMap[String, Any] = null): Any =
       expr match {
-        case LiteralExpression(literal) => literal
+        case LiteralExpression(pos, literal) => literal
         case VariableExpression(pos, name) =>
           declsMap get name match {
             case Some(VariableDeclaration(_, _, _, value)) => value
@@ -63,6 +63,10 @@ object Interpreter {
                   true
                 case (LeafPattern(pos, typ, value), LeafElem(etyp, evalue)) =>
                   unify(typ, etyp) && unify(value, evalue)
+                case (BranchPattern(pos, typ, branches), BranchElem(etyp, ebranches)) =>
+                  unify(typ, etyp) && branches.length == ebranches.length && (branches zip ebranches forall {
+                    case (p, e) => unify(p, e)
+                  })
                 case _ => false
               }
 
@@ -72,8 +76,10 @@ object Interpreter {
                 case (pat, stmt) :: tail =>
                   if (unify(pat, arg))
                     execute(stmt)
-                  else
+                  else {
+                    locals.clear
                     matchCases(tail)
+                  }
               }
 
             matchCases(cases)
