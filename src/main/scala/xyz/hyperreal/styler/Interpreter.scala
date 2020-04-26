@@ -45,6 +45,14 @@ object Interpreter {
 
             def unify(pat: PatternFAST, value: Any): Boolean =
               (pat, value) match {
+                case (StringPattern(pos, s), value: String) => s == value
+                case (VariablePattern(pos, name), value) =>
+                  locals get name match {
+                    case Some(_) => problem(pos, "local variable already used")
+                    case None    => locals(name) = value
+                  }
+
+                  true
                 case (LeafPattern(pos, typ, value), LeafElem(etyp, evalue)) => unify(typ, etyp) && unify(value, evalue)
                 case _                                                      => false
               }
