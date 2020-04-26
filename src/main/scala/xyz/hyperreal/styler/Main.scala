@@ -4,7 +4,7 @@ import scala.util.parsing.input.CharSequenceReader
 
 object Main extends App {
 
-  val input =
+//  val input =
 //    """
 //      |a = -"[" b -"]" <array> | -"[" -"]" <array>.
 //      |b = c { -"," c } /flatten.
@@ -26,22 +26,27 @@ object Main extends App {
 //      |        | ident
 //      |        | "(" expression ")" <group>.
 //      |""".stripMargin
+//    """
+//      |value = number | string | object | array | "true" | "false" | "null".
+//      |
+//      |object = "{" ^members "}" <object> | "{" "}" <object>.
+//      |
+//      |members = member { "," member } /flatten.
+//      |
+//      |member = string ":" value <member>.
+//      |
+//      |array = "[" ^elements "]" <array> | "[" "]" <array>.
+//      |
+//      |elements = value { "," value } /flatten.
+//      |""".stripMargin
+//  val ast = SyntaxParser(input)
+//
+//  println(ast)
+//  println(Interpreter(ast, new CharSequenceReader(""" {"a": [1], "b": []} """))) // (3 + 4) * 5
+
+  val format =
     """
-      |value = number | string | object | array | "true" | "false" | "null".
+      |printElem:
       |
-      |object = "{" ^members "}" <object> | "{" "}" <object>.
-      |
-      |members = member { "," member } /flatten.
-      |
-      |member = string ":" value <member>.
-      |
-      |array = "[" ^elements "]" <array> | "[" "]" <array>.
-      |
-      |elements = value { "," value } /flatten.
       |""".stripMargin
-  val ast = FormatParser(input)
-
-  println(ast)
-  println(Interpreter(ast, new CharSequenceReader(""" {"a": [1], "b": []} """))) // (3 + 4) * 5
-
 }

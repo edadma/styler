@@ -3,7 +3,7 @@ package xyz.hyperreal.styler
 import scala.util.parsing.input.Position
 
 abstract class FAST
-case class FormatFAST(decls: DeclarationFAST) extends FAST
+case class FormatFAST(decls: List[DeclarationFAST]) extends FAST
 
 abstract class DeclarationFAST                                                     extends FAST { val name: String; val pos: Position }
 case class VariableDeclaration(pos: Position, name: String, value: ExpressionFAST) extends DeclarationFAST

@@ -9,19 +9,20 @@ object FormatParser extends RegexParsers {
 
   def pos: Parser[Position] = positioned(success(new Positional {})) ^^ { _.pos }
 
-  def format: Parser[FormatFAST] = rep1(declaration) ^^ FormatFAST
+  def format: Parser[FormatFAST] =
+    rep1(declaration) ^^ FormatFAST
 
   def declaration: Parser[DeclarationFAST] =
     variable | function
 
   def variable: Parser[VariableDeclaration] =
-    pos ~ name ~ "=" ~ expression ^^ {
-      case p ~ n ~ _ ~ v => VariableDeclaration(p, n, v)
+    pos ~ name ~ "=" ~ expression ~ ";" ^^ {
+      case p ~ n ~ _ ~ v ~ _ => VariableDeclaration(p, n, v)
     }
 
   def function: Parser[FunctionDeclaration] =
     pos ~ name ~ ":" ~ cases ^^ {
-      case p ~ n ~ _ ~ a => FunctionDeclaration(p, n, cases)
+      case p ~ n ~ _ ~ cs => FunctionDeclaration(p, n, cs)
     }
 
   def cases: Parser[CasesFAST] =
