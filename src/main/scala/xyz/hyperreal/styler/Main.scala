@@ -78,9 +78,9 @@ object Main extends App {
   val format =
     """
       |printElem: {
-      |  ['number' n] -> print(n);
-      |  ['ident' v] -> print(v);
-      |  ('+' left right) -> {
+      |  <'number' n> -> print(n);
+      |  <'ident' v> -> print(v);
+      |  ['+' left right] -> {
       |    printElem(left);
       |    print(' plus ');
       |    printElem(right);

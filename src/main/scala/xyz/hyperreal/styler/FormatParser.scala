@@ -59,12 +59,13 @@ object FormatParser extends RegexParsers {
 
   def pattern: Parser[PatternFAST] =
     variablePattern |
-      pos ~ "[" ~ simplePattern ~ simplePattern ~ "]" ^^ {
+      pos ~ "<" ~ simplePattern ~ simplePattern ~ ">" ^^ {
         case p ~ _ ~ n ~ v ~ _ => LeafPattern(p, n, v)
       } |
-      pos ~ "(" ~ simplePattern ~ rep(pattern) ~ ")" ^^ {
+      pos ~ "[" ~ simplePattern ~ rep(pattern) ~ "]" ^^ {
         case p ~ _ ~ n ~ bs ~ _ => BranchPattern(p, n, bs)
-      }
+      } |
+      "(" ~> pattern <~ ")"
 
   def expression: Parser[ExpressionFAST] =
     pos ~ string ^^ {
@@ -75,7 +76,8 @@ object FormatParser extends RegexParsers {
       } |
       pos ~ name ^^ {
         case p ~ n => VariableExpression(p, n)
-      }
+      } |
+      "(" ~> expression <~ ")"
 
   def name: Parser[String] = "[A-Za-z_][A-Za-z0-9_]*".r
 
