@@ -9,6 +9,7 @@ abstract class DeclarationFAST extends FAST { val name: String; val pos: Positio
 case class VariableDeclaration(pos: Position, name: String, init: ExpressionFAST, var value: Any = null)
     extends DeclarationFAST
 case class FunctionDeclaration(pos: Position, name: String, body: CasesFAST) extends DeclarationFAST
+case class NativeDeclaration(name: String, func: Seq[Any] => Unit)           extends DeclarationFAST { val pos: Position = null }
 
 case class CasesFAST(cases: Seq[(PatternFAST, StatementFAST)]) extends FAST
 
