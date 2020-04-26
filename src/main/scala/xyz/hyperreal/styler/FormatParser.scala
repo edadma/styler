@@ -38,8 +38,9 @@ object FormatParser extends RegexParsers {
       "{" ~> rep(simpleStatement <~ ";") <~ "}" ^^ BlockStatement
 
   def simpleStatement: Parser[StatementFAST] =
-    pos ~ name ~ "(" ~ rep(expression) ~ ")" ^^ {
-      case p ~ n ~ _ ~ args ~ _ => ApplyStatement(p, n, args)
+    pos ~ name ~ opt("(" ~> rep(expression) <~ ")") ^^ {
+      case p ~ n ~ None       => ApplyStatement(p, n, Nil)
+      case p ~ n ~ Some(args) => ApplyStatement(p, n, args)
     }
 
   def variablePattern: Parser[VariablePattern] =
@@ -47,11 +48,11 @@ object FormatParser extends RegexParsers {
       case p ~ n => VariablePattern(p, n)
     }
 
-  def string: Parser[String] = """"[^"\n]*"|'[^'\n]'""".r
+  def string: Parser[String] = """"[^"\n]*"|'[^'\n]*'""".r
 
-  def stringPattern: Parser[VariablePattern] =
-    pos ~ name ^^ {
-      case p ~ n => VariablePattern(p, n)
+  def stringPattern: Parser[StringPattern] =
+    pos ~ string ^^ {
+      case p ~ s => StringPattern(p, s)
     }
 
   def simplePattern: Parser[SimplePattern] = variablePattern | stringPattern
@@ -63,7 +64,7 @@ object FormatParser extends RegexParsers {
       }
 
   def expression: Parser[ExpressionFAST] =
-    pos ~ """"[^"\n]*"|'[^'\n]'""".r ^^ {
+    pos ~ """"[^"\n]*"|'[^'\n]*'""".r ^^ {
       case p ~ s => LiteralExpression(p, s.substring(1, s.length - 1))
     } |
       pos ~ """(?:\d+\.\d+|\.\d+|\d+)(?:(?:e|E)(?:\+|-)?\d+)?""".r ^^ {

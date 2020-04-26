@@ -46,7 +46,13 @@ object Main extends App {
 
   val format =
     """
-      |printElem:
-      |
+      |printElem: {
+      |  ['number' n] -> print(n);
+      |}
       |""".stripMargin
+
+  val fast = FormatParser(format)
+
+  println(fast)
+
 }
