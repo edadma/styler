@@ -44,6 +44,20 @@ object Main extends App {
 //  println(ast)
 //  println(Interpreter(ast, new CharSequenceReader(""" {"a": [1], "b": []} """))) // (3 + 4) * 5
 
+  val input = "123"
+
+  val syntax =
+    """
+      |input = number.
+      |""".stripMargin
+  val sast = SyntaxParser(syntax)
+
+  println(sast)
+
+  val ast = StylerParser(sast, new CharSequenceReader(input)) getOrElse (sys.error("didn't parse"))
+
+  println(ast)
+
   val format =
     """
       |printElem: {
@@ -54,5 +68,6 @@ object Main extends App {
   val fast = FormatParser(format)
 
   println(fast)
+  Interpreter(fast, ast)
 
 }

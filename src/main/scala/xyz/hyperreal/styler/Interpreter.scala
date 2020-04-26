@@ -43,11 +43,20 @@ object Interpreter {
 
             val arg = if (args.length == 1) args.head else args
 
-            def unify( pat: PatternFAST )
+            def unify(pat: PatternFAST, value: Any): Boolean =
+              (pat, value) match {
+                case (LeafPattern(pos, typ, value), LeafElem(etyp, evalue)) => unify(typ, etyp) && unify(value, evalue)
+                case _                                                      => false
+              }
+
             def matchCases(cases: Seq[(PatternFAST, StatementFAST)]): Unit =
               cases match {
-                case Nil               => problem(pos, "none of the cases matched")
-                case Some((pat, stmt)) =>
+                case Nil => problem(pos, "none of the cases matched")
+                case (pat, stmt) :: tail =>
+                  if (unify(pat, arg))
+                    execute(stmt)
+                  else
+                    matchCases(tail)
               }
 
             matchCases(cases)
