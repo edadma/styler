@@ -17,20 +17,17 @@ object Interpreter {
       }
     val declsMap = mutable.HashMap[String, DeclarationFAST](builtinDecls: _*)
 
-    def eval(expr: ExpressionFAST, locals: mutable.HashMap[String, Any] = null): Any =
+    def eval(expr: ExpressionFAST, locals: Map[String, Any] = Map()): Any =
       expr match {
         case LiteralExpression(pos, literal) => literal
         case VariableExpression(pos, name) =>
           declsMap get name match {
             case Some(VariableDeclaration(_, _, _, value)) => value
             case None =>
-              if (locals eq null)
-                problem(pos, "variable not found")
-              else
-                locals get name match {
-                  case Some(x) => x
-                  case None    => problem(pos, "variable not found")
-                }
+              locals get name match {
+                case Some(x) => x
+                case None    => problem(pos, "variable not found")
+              }
           }
         case _ =>
       }
@@ -42,10 +39,10 @@ object Interpreter {
           case Some(FunctionDeclaration(_, _, cases)) =>
             val locals = new mutable.HashMap[String, Any]
 
-            def execute(stmt: StatementFAST): Unit =
+            def execute(stmt: StatementFAST, locals: Map[String, Any]): Unit =
               stmt match {
                 case ApplyStatement(pos, func, args) => call(pos, func, args map (a => eval(a, locals)))
-                case BlockStatement(stmts)           => stmts foreach execute
+                case BlockStatement(stmts)           => stmts foreach (execute(_, locals))
                 case _                               =>
               }
 
@@ -106,11 +103,9 @@ object Interpreter {
               cases match {
                 case Nil => problem(pos, "none of the cases matched")
                 case (pat, stmt) :: tail =>
-                  if (unify(pat, arg, Map()))
-                    execute(stmt)
-                  else {
-                    locals.clear
-                    matchCases(tail)
+                  unify(pat, arg, Map()) match {
+                    case Some(m) => execute(stmt, m)
+                    case None    => matchCases(tail)
                   }
               }
 
