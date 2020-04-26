@@ -1,5 +1,7 @@
 package xyz.hyperreal.styler
 
+import java.io
+
 import scala.util.parsing.combinator.RegexParsers
 import scala.util.parsing.input.{Position, Positional}
 
@@ -13,7 +15,7 @@ object FormatParser extends RegexParsers {
     variable | function
 
   def variable: Parser[VariableDeclaration] =
-    pos ~ name ~ "=" ~ value ^^ {
+    pos ~ name ~ "=" ~ expression ^^ {
       case p ~ n ~ _ ~ v => VariableDeclaration(p, n, v)
     }
 
@@ -23,8 +25,20 @@ object FormatParser extends RegexParsers {
     }
 
   def cases: Parser[CasesFAST] =
-    pattern ~ statement ^^ {
-      case p ~ s => CasesFAST(List(p, s))
+    "{" ~> rep1(arrow) <~ "}" ^^ CasesFAST
+
+  def arrow: Parser[(PatternFAST, StatementFAST)] =
+    pattern ~ "->" ~ statement ^^ {
+      case p ~ _ ~ s => (p, s)
+    }
+
+  def statement: Parser[StatementFAST] =
+    simpleStatement <~ ";" |
+      "{" ~> rep(simpleStatement <~ ";") <~ "}" ^^ BlockStatement
+
+  def simpleStatement: Parser[StatementFAST] =
+    pos ~ name ~ "(" ~ rep(expression) ~ ")" ^^ {
+      case p ~ n ~ _ ~ args ~ _ => ApplyStatement(p, n, args)
     }
 
   def variablePattern: Parser[VariablePattern] =
@@ -39,20 +53,23 @@ object FormatParser extends RegexParsers {
       case p ~ n => VariablePattern(p, n)
     }
 
-  def simplePattern: Parser[SimplePattern] = variablePattern
+  def simplePattern: Parser[SimplePattern] = variablePattern | stringPattern
 
-  def pattern: FormatParser.Parser[PatternFAST] =
+  def pattern: Parser[PatternFAST] =
     variablePattern |
-      pos ~ "[" ~ name ~ pattern ~ "]" ^^ {
+      pos ~ "[" ~ simplePattern ~ simplePattern ~ "]" ^^ {
         case p ~ _ ~ n ~ v ~ _ => LeafPattern(p, n, v)
       }
 
-  def value =
+  def expression: Parser[ExpressionFAST] =
     pos ~ """"[^"\n]*"|'[^'\n]'""".r ^^ {
-      case p ~ s => ValueFAST(p, s.substring(1, s.length - 1))
+      case p ~ s => LiteralExpression(p, s.substring(1, s.length - 1))
     } |
       pos ~ """(?:\d+\.\d+|\.\d+|\d+)(?:(?:e|E)(?:\+|-)?\d+)?""".r ^^ {
-        case p ~ n => ValueFAST(p, n.toDouble)
+        case p ~ n => LiteralExpression(p, n.toDouble)
+      } |
+      pos ~ name ^^ {
+        case p ~ n => VariableExpression(p, n)
       }
 
   def name: Parser[String] = "[A-Za-z_][A-Za-z0-9_]*".r
