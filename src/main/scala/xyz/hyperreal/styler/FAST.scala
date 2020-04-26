@@ -18,6 +18,7 @@ case class VariableExpression(pos: Position, name: String) extends ExpressionFAS
 
 abstract class PatternFAST                                                              extends FAST
 trait SimplePattern                                                                     extends PatternFAST
+case class AlternatesPattern(alts: Seq[PatternFAST])                                    extends PatternFAST { val pos: Position = null }
 case class TuplePattern(pos: Position, elems: Seq[PatternFAST])                         extends PatternFAST
 case class VariablePattern(pos: Position, name: String)                                 extends PatternFAST with SimplePattern
 case class StringPattern(pos: Position, s: String)                                      extends PatternFAST with SimplePattern

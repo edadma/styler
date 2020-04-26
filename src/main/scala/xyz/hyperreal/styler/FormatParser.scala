@@ -57,13 +57,21 @@ object FormatParser extends RegexParsers {
 
   def simplePattern: Parser[SimplePattern] = variablePattern | stringPattern
 
-  def pattern: Parser[PatternFAST] =
+  def pattern: Parser[PatternFAST] = alternate
+
+  def alternate: Parser[PatternFAST] =
+    rep1sep(primaryPattern, "|") ^^ {
+      case List(e) => e
+      case l       => AlternatesPattern(l)
+    }
+
+  def primaryPattern: Parser[PatternFAST] =
     variablePattern |
-      pos ~ "<" ~ simplePattern ~ simplePattern ~ ">" ^^ {
-        case p ~ _ ~ n ~ v ~ _ => LeafPattern(p, n, v)
+      pos ~ "<" ~ simplePattern ~ "," ~ simplePattern ~ ">" ^^ {
+        case p ~ _ ~ n ~ _ ~ v ~ _ => LeafPattern(p, n, v)
       } |
-      pos ~ "[" ~ simplePattern ~ rep(pattern) ~ "]" ^^ {
-        case p ~ _ ~ n ~ bs ~ _ => BranchPattern(p, n, bs)
+      pos ~ "[" ~ simplePattern ~ "," ~ repsep(pattern, ",") ~ "]" ^^ {
+        case p ~ _ ~ n ~ _ ~ bs ~ _ => BranchPattern(p, n, bs)
       } |
       "(" ~> pattern <~ ")"
 
@@ -81,12 +89,6 @@ object FormatParser extends RegexParsers {
 
   def name: Parser[String] = "[A-Za-z_][A-Za-z0-9_]*".r
 
-//  def alternate: Parser[PatternSAST] =
-//    rep1sep(sequence, "|") ^^ {
-//      case List(e) => e
-//      case l       => AlternatesSAST(l)
-//    }
-//
 //  def sequence: Parser[PatternSAST] =
 //    rep1(elem) ^^ {
 //      case List(e) => e
