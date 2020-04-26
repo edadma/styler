@@ -36,8 +36,9 @@ object Interpreter {
       }
 
     def apply(ast: FAST): Unit = {
-      def call(pos: Position, func: String, args: Seq[Any]): Unit =
+      def call(pos: Position, func: String, args: Seq[Any]): Unit = {
         declsMap get func match {
+          case Some(NativeDeclaration(name, func)) => func(args)
           case Some(FunctionDeclaration(_, _, cases)) =>
             val locals = new mutable.HashMap[String, Any]
 
@@ -78,6 +79,7 @@ object Interpreter {
             matchCases(cases)
           case _ => problem(pos, "function not declared")
         }
+      }
 
       def declare(decl: DeclarationFAST): Unit = {
         declsMap get decl.name match {
