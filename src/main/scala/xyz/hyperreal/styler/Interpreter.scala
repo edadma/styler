@@ -78,8 +78,8 @@ object Interpreter {
                             case Nil => Some(vars)
                             case (p, e) :: tail =>
                               unify(p, e, vars) match {
-                                case None => unifyList(tail, vars)
-                                case r    => r
+                                case None    => None
+                                case Some(m) => unifyList(tail, m)
                               }
                           }
 
@@ -87,15 +87,26 @@ object Interpreter {
                       } else
                         None
                   }
-                case (AlternatesPattern(alts), _) => alts.exists(p => unify(p, value))
-                case _                            => false
+                case (AlternatesPattern(alts), _) =>
+                  def unifyAlts(alts: Seq[PatternFAST]): Option[Map[String, Any]] =
+                    alts match {
+                      case Nil => None
+                      case p :: tail =>
+                        unify(p, value, vars) match {
+                          case None => unifyAlts(tail)
+                          case r    => r
+                        }
+                    }
+
+                  unifyAlts(alts)
+                case _ => None
               }
 
             def matchCases(cases: Seq[(PatternFAST, StatementFAST)]): Unit =
               cases match {
                 case Nil => problem(pos, "none of the cases matched")
                 case (pat, stmt) :: tail =>
-                  if (unify(pat, arg))
+                  if (unify(pat, arg, Map()))
                     execute(stmt)
                   else {
                     locals.clear
