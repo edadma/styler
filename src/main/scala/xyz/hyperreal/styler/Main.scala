@@ -80,7 +80,7 @@ object Main extends App {
       |printElem: {
       |  <'number', n> -> print(n);
       |  <'ident', v> -> print(v);
-      |  ['+'|'-', left, right] -> {
+      |  [op@('+'|'-'), left, right] -> {
       |    printElem(left);
       |    print(' plus ');
       |    printElem(right);

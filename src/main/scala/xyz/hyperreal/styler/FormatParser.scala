@@ -48,10 +48,16 @@ object FormatParser extends RegexParsers {
   def pattern: Parser[PatternFAST] = alternate
 
   def alternate: Parser[PatternFAST] =
-    rep1sep(primaryPattern, "|") ^^ {
+    rep1sep(namedPattern, "|") ^^ {
       case List(e) => e
       case l       => AlternatesPattern(l)
     }
+
+  def namedPattern =
+    pos ~ name ~ "@" ~ primaryPattern ^^ {
+      case p ~ n ~ _ ~ pat => NamedPattern(p, n, pat)
+    } |
+      primaryPattern
 
   def primaryPattern: Parser[PatternFAST] =
     pos ~ name ^^ {

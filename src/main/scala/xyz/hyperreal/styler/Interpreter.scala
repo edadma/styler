@@ -37,8 +37,6 @@ object Interpreter {
         declsMap get func match {
           case Some(NativeDeclaration(name, func)) => func(args)
           case Some(FunctionDeclaration(_, _, cases)) =>
-            val locals = new mutable.HashMap[String, Any]
-
             def execute(stmt: StatementFAST, locals: Map[String, Any]): Unit =
               stmt match {
                 case ApplyStatement(pos, func, args) => call(pos, func, args map (a => eval(a, locals)))
@@ -56,8 +54,8 @@ object Interpreter {
                   else
                     None
                 case (VariablePattern(pos, name), value) =>
-                  locals get name match {
-                    case Some(_) => problem(pos, "local variable already used")
+                  vars get name match {
+                    case Some(_) => problem(pos, "pattern variable already used")
                     case None    => Some(vars + (name -> value))
                   }
                 case (LeafPattern(pos, typ, value), LeafElem(etyp, evalue)) =>
@@ -96,7 +94,8 @@ object Interpreter {
                     }
 
                   unifyAlts(alts)
-                case _ => None
+                case NamedPattern(pos, name, pat) =>
+                case _                            => None
               }
 
             def matchCases(cases: Seq[(PatternFAST, StatementFAST)]): Unit =
