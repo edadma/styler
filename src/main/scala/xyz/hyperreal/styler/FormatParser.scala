@@ -65,6 +65,9 @@ object FormatParser extends RegexParsers {
       pos ~ string ^^ {
         case p ~ s => StringPattern(p, s)
       } |
+      pos ~ "<" ~ pattern ~ ">" ^^ {
+        case p ~ _ ~ pat ~ _ => LiteralPattern(p, pat)
+      } |
       pos ~ "<" ~ pattern ~ "," ~ pattern ~ ">" ^^ {
         case p ~ _ ~ n ~ _ ~ v ~ _ => LeafPattern(p, n, v)
       } |

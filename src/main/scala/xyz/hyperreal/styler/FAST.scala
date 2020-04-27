@@ -22,6 +22,7 @@ case class AlternatesPattern(alts: Seq[PatternFAST])                            
 case class TuplePattern(pos: Position, elems: Seq[PatternFAST])                       extends PatternFAST
 case class VariablePattern(pos: Position, name: String)                               extends PatternFAST
 case class StringPattern(pos: Position, s: String)                                    extends PatternFAST
+case class LiteralPattern(pos: Position, pat: PatternFAST)                            extends PatternFAST
 case class LeafPattern(pos: Position, typ: PatternFAST, value: PatternFAST)           extends PatternFAST
 case class BranchPattern(pos: Position, typ: PatternFAST, branches: Seq[PatternFAST]) extends PatternFAST
 case object AnyPattern                                                                extends PatternFAST { val pos: Position = null }

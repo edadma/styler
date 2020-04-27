@@ -25,6 +25,7 @@ object Interpreter {
           }
         case _ =>
       }
+
     def call(pos: Position, func: String, args: Seq[Any]): Unit = {
       declsMap get func match {
         case Some(NativeDeclaration(name, func)) => func(args)
@@ -34,10 +35,18 @@ object Interpreter {
               case ApplyStatement(pos, func, args) =>
                 val argvals = args map (a => eval(a, locals))
 
-                func match {
-                  case "print"    => print(argvals mkString ", ")
-                  case "printSeq" =>
-                  case _          => call(pos, func, argvals)
+                (func, argvals) match {
+                  case ("print", List(a)) => print(a)
+                  case ("printSeq", List(BranchElem(_, branches), sep: String)) =>
+                    if (branches nonEmpty) {
+                      branches.init foreach { b =>
+                        printElem(b)
+                        print(sep)
+                      }
+
+                      printElem(branches.last)
+                    }
+                  case _ => call(pos, func, argvals)
                 }
               case BlockStatement(stmts) => stmts foreach (execute(_, locals))
               case _                     =>
@@ -59,7 +68,8 @@ object Interpreter {
                   Some(vars)
                 else
                   None
-              case (VariablePattern(pos, name), value) => addvar(pos, name, value, vars)
+              case (VariablePattern(pos, name), value)              => addvar(pos, name, value, vars)
+              case (LiteralPattern(pos, pat), LiteralElem(literal)) => unify(pat, literal, vars)
               case (LeafPattern(pos, typ, value), LeafElem(etyp, evalue)) =>
                 unify(typ, etyp, vars) match {
                   case None    => None
@@ -131,8 +141,9 @@ object Interpreter {
           case None    => declsMap(decl.name) = decl
         }
 
-    def apply(ast: FAST): Unit = {
+    def printElem(elem: Elem) = call(null, "printElem", Seq(elem))
 
+    def apply(ast: FAST): Unit =
       ast match {
         case FormatFAST(decls) =>
           decls foreach apply
@@ -140,10 +151,9 @@ object Interpreter {
             case v @ VariableDeclaration(_, _, init, _) => v.value = eval(init)
             case _                                      =>
           }
-          call(null, "printElem", Seq(elem))
+          printElem(elem)
         case decl: DeclarationFAST => declare(decl)
       }
-    }
 
     apply(ast)
   }

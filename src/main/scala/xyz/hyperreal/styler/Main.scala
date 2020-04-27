@@ -18,12 +18,11 @@ object Main extends App {
       |
       |elements = value { "," value } /flatten.
       |""".stripMargin
-  val input = """ {"a": [1], "b": []} """
+  val input = """ {"a": [1], "b": [], "c": {}, "d": null} """
 
   val jsonFormat =
     """
       |printElem: {
-      |  const -> print const;
       |  <'number', n> -> print n;
       |  <'string', s> -> {
       |    print '"';
@@ -42,6 +41,12 @@ object Main extends App {
       |    printSeq members, ', ';
       |    print '}';
       |    }
+      |  ['member', key, value] -> {
+      |    printElem(key);
+      |    print(': ');
+      |    printElem(value);
+      |    }
+      |  <const@('true'|'false'|'null')> -> print const;
       |}
       |""".stripMargin
   val sast = SyntaxParser(jsonSyntax)
