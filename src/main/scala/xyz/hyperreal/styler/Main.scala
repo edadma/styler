@@ -8,13 +8,13 @@ object Main extends App {
     """
       |value = number | string | object | array | `true` | `false` | `null`.
       |
-      |object = "{" ^members "}" <object> | "{" "}" <object>.
+      |object = "{" members "}" <object> | "{" "}" <object>.
       |
       |members = member { "," member } /flatten.
       |
       |member = string ":" value <member>.
       |
-      |array = "[" ^elements "]" <array> | "[" "]" <array>.
+      |array = "[" elements "]" <array> | "[" "]" <array>.
       |
       |elements = value { "," value } /flatten.
       |""".stripMargin
@@ -23,25 +23,26 @@ object Main extends App {
   val jsonFormat =
     """
       |printElem: {
-      |  <const> -> print(const);
-      |  <'number', n> -> print(n);
+      |  const -> print const;
+      |  <'number', n> -> print n;
       |  <'string', s> -> {
-      |    print('"');
-      |    print(s);
-      |    print('"');
+      |    print '"';
+      |    print s;
+      |    print '"';
       |    }
-      |  ['array'] -> print('[]');
+      |  ['array'] -> print '[]';
       |  ['array', elements] -> {
-      |    print('[');
-      |    printSeq(elements, ", ");
-      |    print(']');
+      |    print '[';
+      |    printSeq elements, ', ';
+      |    print ']';
       |    }
-      |  ['object'] -> print('{}');
+      |  ['object'] -> print '{}';
       |  ['object', members] -> {
-      |    print('{');
-      |    printSeq(members, ", ");
-      |    print('}');
+      |    print '{';
+      |    printSeq members, ', ';
+      |    print '}';
       |    }
+      |}
       |""".stripMargin
   val sast = SyntaxParser(jsonSyntax)
 
@@ -54,7 +55,6 @@ object Main extends App {
   val fast = FormatParser(jsonFormat)
 
   println(fast)
-
   Interpreter(fast, ast)
 
 //  val input = "123"
@@ -77,6 +77,7 @@ object Main extends App {
 //      |  ['number' n] -> print(n);
 //      |}
 //      |""".stripMargin
+
 //  val input = "  a+((( 5-c ))) * d / e   "
 //
 //  val syntax =

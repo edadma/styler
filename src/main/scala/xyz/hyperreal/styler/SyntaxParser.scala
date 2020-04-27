@@ -70,7 +70,9 @@ object SyntaxParser extends RegexParsers {
   def apply(input: String): SyntaxSAST =
     parseAll(syntax, input) match {
       case Success(result, _) => result
-      case failure: NoSuccess => scala.sys.error(failure.msg)
+      case failure: NoSuccess =>
+        println(failure)
+        sys.exit
     }
 
 }

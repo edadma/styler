@@ -38,9 +38,8 @@ object FormatParser extends RegexParsers {
       "{" ~> rep(simpleStatement <~ ";") <~ "}" ^^ BlockStatement
 
   def simpleStatement: Parser[StatementFAST] =
-    pos ~ name ~ opt("(" ~> rep(expression) <~ ")") ^^ {
-      case p ~ n ~ None       => ApplyStatement(p, n, Nil)
-      case p ~ n ~ Some(args) => ApplyStatement(p, n, args)
+    pos ~ name ~ repsep(expression, ",") ^^ {
+      case p ~ n ~ args => ApplyStatement(p, n, args)
     }
 
   def string: Parser[String] = """"[^"\n]*"|'[^'\n]*'""".r ^^ (s => s.substring(1, s.length - 1))
@@ -69,8 +68,9 @@ object FormatParser extends RegexParsers {
       pos ~ "<" ~ pattern ~ "," ~ pattern ~ ">" ^^ {
         case p ~ _ ~ n ~ _ ~ v ~ _ => LeafPattern(p, n, v)
       } |
-      pos ~ "[" ~ pattern ~ "," ~ repsep(pattern, ",") ~ "]" ^^ {
-        case p ~ _ ~ n ~ _ ~ bs ~ _ => BranchPattern(p, n, bs)
+      pos ~ "[" ~ pattern ~ opt("," ~> rep1sep(pattern, ",")) ~ "]" ^^ {
+        case p ~ _ ~ n ~ None ~ _     => BranchPattern(p, n, Nil)
+        case p ~ _ ~ n ~ Some(bs) ~ _ => BranchPattern(p, n, bs)
       } |
       "_" ^^^ AnyPattern |
       "(" ~> pattern <~ ")"
@@ -123,7 +123,7 @@ object FormatParser extends RegexParsers {
     parseAll(format, input) match {
       case Success(result, _) => result
       case failure: NoSuccess =>
-        println(failure.msg)
+        println(failure)
         sys.exit
     }
 
