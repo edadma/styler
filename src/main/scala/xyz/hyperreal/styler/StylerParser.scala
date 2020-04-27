@@ -4,7 +4,6 @@ import java.util.regex.Pattern
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.util.Try
 
 object StylerParser {
 
@@ -185,10 +184,75 @@ object StylerParser {
           None
     }
 
-  private val numberCharSet = Set('.', 'e', 'E', '-', '+') ++ ('0' to '9')
-  private val numberRegex   = """(?:\d+\.\d+|\.\d+|\d+)(?:(?:e|E)(?:\+|-)?\d+)?""".r.pattern
+  //private val numberRegex   = """(?:\d+\.\d+|\.\d+|\d+)(?:(?:e|E)(?:\+|-)?\d+)?""".r.pattern
 
-  private def numberMatcher(r: Input) = {}
+  val digit  = SetLexer(_.isDigit)
+  val digits = Rep1Lexer(digit)
+  val dot    = CharLexer('.')
+
+  abstract class Lexer
+  case class CharLexer(c: Char)                  extends Lexer
+  case class SetLexer(set: Char => Boolean)      extends Lexer
+  case class RepLexer(lex: Lexer)                extends Lexer
+  case class Rep1Lexer(lex: Lexer)               extends Lexer
+  case class SeqLexer(left: Lexer, right: Lexer) extends Lexer
+  case class AltLexer(left: Lexer, right: Lexer) extends Lexer
+  case class OptLexer(lex: Lexer)                extends Lexer
+
+  def matches(r: Input, lex: Lexer) = {
+    @scala.annotation.tailrec
+    def rep(r: Input, lex: Lexer, buf: Vector[Char]): Option[(Input, Vector[Char])] =
+      lexer(r, lex, buf) match {
+        case None           => Some((r, buf))
+        case Some((r, buf)) => rep(r, lex, buf)
+      }
+
+    def lexer(r: Input, lex: Lexer, buf: Vector[Char]): Option[(Input, Vector[Char])] =
+      lex match {
+        case CharLexer(c) =>
+          if (!r.atEnd && c == r.first)
+            Some((r.rest, buf :+ r.first))
+          else
+            None
+        case SetLexer(set) =>
+          if (!r.atEnd && set(r.first))
+            Some((r.rest, buf :+ r.first))
+          else
+            None
+        case OptLexer(lex) =>
+          lexer(r, lex, buf) match {
+            case None => Some((r, buf))
+            case s    => s
+          }
+        case RepLexer(lex) => rep(r, lex, buf)
+        case Rep1Lexer(lex) =>
+          lexer(r, lex, buf) match {
+            case None           => None
+            case Some((r, buf)) => rep(r, lex, buf)
+          }
+        case SeqLexer(left, right) =>
+          lexer(r, left, buf) match {
+            case None           => None
+            case Some((r, buf)) => lexer(r, right, buf)
+          }
+        case AltLexer(left, right) =>
+          lexer(r, left, buf) match {
+            case None => lexer(r, right, buf)
+            case s    => s
+          }
+      }
+
+    lexer(r, lex, Vector.empty) map { case (r, v) => (v mkString, r) }
+  }
+
+  private def numberMatcher(r: Input) =
+    matches(
+      r,
+      SeqLexer(
+        AltLexer(SeqLexer(digits, OptLexer(SeqLexer(dot, digits))), SeqLexer(dot, digits)),
+        OptLexer(SeqLexer(SetLexer(Set('e', 'E')), SeqLexer(OptLexer(SetLexer(Set('+', '-'))), digits)))
+      )
+    )
 
   private def matches(r: Input, s: String) = {
     @scala.annotation.tailrec

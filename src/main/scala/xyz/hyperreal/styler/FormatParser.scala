@@ -72,6 +72,7 @@ object FormatParser extends RegexParsers {
       pos ~ "[" ~ pattern ~ "," ~ repsep(pattern, ",") ~ "]" ^^ {
         case p ~ _ ~ n ~ _ ~ bs ~ _ => BranchPattern(p, n, bs)
       } |
+      "_" ^^^ AnyPattern |
       "(" ~> pattern <~ ")"
 
   def expression: Parser[ExpressionFAST] =

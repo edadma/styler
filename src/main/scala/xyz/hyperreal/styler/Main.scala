@@ -4,13 +4,6 @@ import scala.util.parsing.input.CharSequenceReader
 
 object Main extends App {
 
-//  val input =
-//    """
-//      |a = -"[" b -"]" <array> | -"[" -"]" <array>.
-//      |b = c { -"," c } /flatten.
-//      |c = number | a.
-//      |""".stripMargin
-
 //    """
 //      |value = number | string | object | array | "true" | "false" | "null".
 //      |
@@ -49,7 +42,7 @@ object Main extends App {
 //      |  ['number' n] -> print(n);
 //      |}
 //      |""".stripMargin
-  val input = "123" //"a+b-c*d/e"
+  val input = "  a+((( 5-c ))) * d / e   "
 
   val syntax =
     """
@@ -57,7 +50,7 @@ object Main extends App {
       |
       |term = factor { (`*` | `/`) factor } /infixl.
       |
-      |factor = unary "^" exp /infix
+      |factor = unary `^` factor /infix
       |       | unary.
       |
       |unary = `-` primary
@@ -90,7 +83,13 @@ object Main extends App {
       |    printElem(left);
       |    print(op);
       |    printElem(right);
-      |  }
+      |    }
+      |  ['group', inner@['group', _]] -> printElem(inner);
+      |  ['group', expr] -> {
+      |    print('(');
+      |    printElem(expr);
+      |    print(')');
+      |    }
       |}
       |""".stripMargin
 

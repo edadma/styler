@@ -24,6 +24,7 @@ case class VariablePattern(pos: Position, name: String)                         
 case class StringPattern(pos: Position, s: String)                                    extends PatternFAST
 case class LeafPattern(pos: Position, typ: PatternFAST, value: PatternFAST)           extends PatternFAST
 case class BranchPattern(pos: Position, typ: PatternFAST, branches: Seq[PatternFAST]) extends PatternFAST
+case object AnyPattern                                                                extends PatternFAST { val pos: Position = null }
 
 abstract class StatementFAST                                                      extends FAST
 case class BlockStatement(stmts: Seq[StatementFAST])                              extends StatementFAST

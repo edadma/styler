@@ -23,6 +23,7 @@ object Interpreter {
         case VariableExpression(pos, name) =>
           declsMap get name match {
             case Some(VariableDeclaration(_, _, _, value)) => value
+            case Some(_)                                   => problem(pos, "not a variable")
             case None =>
               locals get name match {
                 case Some(x) => x
@@ -54,6 +55,7 @@ object Interpreter {
 
             def unify(pat: PatternFAST, value: Any, vars: Map[String, Any]): Option[Map[String, Any]] =
               (pat, value) match {
+                case (AnyPattern, _) => Some(vars)
                 case (StringPattern(pos, s), value: String) =>
                   if (s == value)
                     Some(vars)
