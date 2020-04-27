@@ -188,7 +188,7 @@ object StylerParser {
   private val numberCharSet = Set('.', 'e', 'E', '-', '+') ++ ('0' to '9')
   private val numberRegex   = """(?:\d+\.\d+|\.\d+|\d+)(?:(?:e|E)(?:\+|-)?\d+)?""".r.pattern
 
-  private def numberMatcher(r: Input) = regexMatcher(r, numberCharSet, numberCharSet, numberRegex)
+  private def numberMatcher(r: Input) = {}
 
   private def matches(r: Input, s: String) = {
     @scala.annotation.tailrec

@@ -53,7 +53,7 @@ object FormatParser extends RegexParsers {
       case l       => AlternatesPattern(l)
     }
 
-  def namedPattern =
+  def namedPattern: Parser[PatternFAST] =
     pos ~ name ~ "@" ~ primaryPattern ^^ {
       case p ~ n ~ _ ~ pat => NamedPattern(p, n, pat)
     } |
