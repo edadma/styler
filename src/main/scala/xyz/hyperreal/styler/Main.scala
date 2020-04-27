@@ -49,7 +49,7 @@ object Main extends App {
 //      |  ['number' n] -> print(n);
 //      |}
 //      |""".stripMargin
-  val input = "a+b"
+  val input = "a+5-c*d/e"
 
   val syntax =
     """
@@ -78,11 +78,17 @@ object Main extends App {
   val format =
     """
       |printElem: {
-      |  <'number', n> -> print(n);
-      |  <'ident', v> -> print(v);
+      |  <'ident'|'number', lit> -> print(lit);
       |  [op@('+'|'-'), left, right] -> {
       |    printElem(left);
-      |    print(' plus ');
+      |    print(' ');
+      |    print(op);
+      |    print(' ');
+      |    printElem(right);
+      |    }
+      |  [op@('*'|'/'), left, right] -> {
+      |    printElem(left);
+      |    print(op);
       |    printElem(right);
       |  }
       |}

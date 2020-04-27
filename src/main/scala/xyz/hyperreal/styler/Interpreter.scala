@@ -46,6 +46,12 @@ object Interpreter {
 
             val arg = if (args.length == 1) args.head else args
 
+            def addvar(pos: Position, name: String, value: Any, vars: Map[String, Any]) =
+              vars get name match {
+                case Some(_) => problem(pos, "pattern variable already used")
+                case None    => Some(vars + (name -> value))
+              }
+
             def unify(pat: PatternFAST, value: Any, vars: Map[String, Any]): Option[Map[String, Any]] =
               (pat, value) match {
                 case (StringPattern(pos, s), value: String) =>
@@ -53,11 +59,7 @@ object Interpreter {
                     Some(vars)
                   else
                     None
-                case (VariablePattern(pos, name), value) =>
-                  vars get name match {
-                    case Some(_) => problem(pos, "pattern variable already used")
-                    case None    => Some(vars + (name -> value))
-                  }
+                case (VariablePattern(pos, name), value) => addvar(pos, name, value, vars)
                 case (LeafPattern(pos, typ, value), LeafElem(etyp, evalue)) =>
                   unify(typ, etyp, vars) match {
                     case None    => None
@@ -68,6 +70,7 @@ object Interpreter {
                     case None => None
                     case Some(m) =>
                       if (branches.length == ebranches.length) {
+                        @scala.annotation.tailrec
                         def unifyList(l: Seq[(PatternFAST, Any)], vars: Map[String, Any]): Option[Map[String, Any]] =
                           l match {
                             case Nil => Some(vars)
@@ -83,6 +86,7 @@ object Interpreter {
                         None
                   }
                 case (AlternatesPattern(alts), _) =>
+                  @scala.annotation.tailrec
                   def unifyAlts(alts: Seq[PatternFAST]): Option[Map[String, Any]] =
                     alts match {
                       case Nil => None
@@ -94,10 +98,15 @@ object Interpreter {
                     }
 
                   unifyAlts(alts)
-                case NamedPattern(pos, name, pat) =>
-                case _                            => None
+                case (NamedPattern(pos, name, pat), _) =>
+                  unify(pat, value, vars) match {
+                    case Some(m) => addvar(pos, name, value, m)
+                    case None    => None
+                  }
+                case _ => None
               }
 
+            @scala.annotation.tailrec
             def matchCases(cases: Seq[(PatternFAST, StatementFAST)]): Unit =
               cases match {
                 case Nil => problem(pos, "none of the cases matched")
