@@ -1,5 +1,7 @@
 package xyz.hyperreal.styler
 
+import java.io.PrintStream
+
 import scala.reflect.io.File
 import scala.util.parsing.input.CharSequenceReader
 
@@ -45,44 +47,35 @@ object Main extends App {
 
   optionsParser.parse(args, Options()) match {
     case Some(options) =>
-      if (options.parser) {
-        val asl = parse(options.files).head
-
-        if (options.out ne null)
-          write(asl.toString, options.out)
+      val s =
+        if (options.source.toString == "-")
+          io.Source.stdin
         else
-          println(asl)
-      } else if (options.gen) {
-        val code = generate(options.files, options.opt)
+          io.Source.fromFile(options.source)
 
-        if (options.out ne null)
-          write(code, options.out)
-        else
-          println(code)
-      } else if (options.run) {
-        interp(options.files)
-      } else if (options.source) {
-        val code = source(options.files, options.opt)
+      val input = readSource(s)
 
+      s.close
+
+      val out =
         if (options.out ne null)
-          write(code, options.out)
+          new PrintStream(options.out)
         else
-          println(code)
-      } else if (options.out ne null)
-        executable(options.out, options.files, options.opt)
-      else
-        executable(new File("executable"), options.files, options.opt)
+          Console.out
+      val syn = readFile(options.syntax ++ ".syn")
+      val fmt = readFile(options.syntax ++ ".fmt")
+
+      val sast = SyntaxParser(syn)
+      val ast  = StylerParser(sast, new CharSequenceReader(input)) getOrElse { println("didn't parse"); sys.exit(1) }
+      val fast = FormatParser(fmt)
+
+      Interpreter(fast, ast, out)
     case None => sys.exit(1)
   }
 
-  def sourceForFile(f: File) =
-    if (f.toString == "-")
-      io.Source.stdin
-    else
-      io.Source.fromFile(f)
+  def readFile(f: String) = readSource(io.Source.fromFile(f))
 
-  def readFile(f: File) = {
-    val s   = io.Source.fromFile(f)
+  def readSource(s: io.Source) = {
     val res = s.mkString
 
     s.close
