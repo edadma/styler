@@ -6,6 +6,18 @@ import scala.util.parsing.combinator.RegexParsers
 import scala.util.parsing.input.{Position, Positional}
 
 object FormatParser extends RegexParsers {
+  val escapes = "\\\\b|\\\\f|\\\\t|\\\\r|\\\\n|\\\\\\\\|\\\\\"" r
+
+  def unescape(s: String) =
+    escapes.replaceAllIn(s, _.matched match {
+      case "\\b"  => "\b"
+      case "\\f"  => "\f"
+      case "\\t"  => "\t"
+      case "\\r"  => "\r"
+      case "\\n"  => "\n"
+      case "\\\\" => "\\"
+      case "\\\"" => "\""
+    })
 
   def pos: Parser[Position] = positioned(success(new Positional {})) ^^ { _.pos }
 
@@ -42,7 +54,7 @@ object FormatParser extends RegexParsers {
       case p ~ n ~ args => ApplyStatement(p, n, args)
     }
 
-  def string: Parser[String] = """"[^"\n]*"|'[^'\n]*'""".r ^^ (s => s.substring(1, s.length - 1))
+  def string: Parser[String] = """"[^"\n]*"|'[^'\n]*'""".r ^^ (s => unescape(s.substring(1, s.length - 1)))
 
   def pattern: Parser[PatternFAST] = alternate
 

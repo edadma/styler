@@ -5,13 +5,41 @@ import scala.util.parsing.input.Position
 
 object Interpreter {
 
-  private val reserved = Set("print", "printSeq")
+  private val reserved = Set("print", "printSeq", "printIndent", "printDedent")
+
+  val spaces = 2
+
+  def escape(s: String) = s.replace("\n", "\\n")
 
   def apply(ast: FAST, elem: Elem): Unit = {
     val declsMap = new mutable.HashMap[String, DeclarationFAST]
+    var level    = 0
+    var nl       = true
+
+    def outs(a: Any) = a.toString foreach outc
+
+    def outc(c: Char) =
+      c match {
+        case '\n' =>
+          print('\n')
+          nl = true
+        case _ =>
+          if (nl) {
+            print(" " * spaces * level)
+            nl = false
+          }
+
+          print(c)
+      }
+
+    def indent(): Unit = level += 1
+
+    def dedent(): Unit = level -= 1
 
     def eval(expr: ExpressionFAST, locals: Map[String, Any] = Map()): Any =
       expr match {
+        case LiteralExpression(pos, literal: String) =>
+          literal
         case LiteralExpression(pos, literal) => literal
         case VariableExpression(pos, name) =>
           declsMap get name match {
@@ -36,12 +64,20 @@ object Interpreter {
                 val argvals = args map (a => eval(a, locals))
 
                 (func, argvals) match {
-                  case ("print", List(a)) => print(a)
+                  case ("print", List(a)) => outs(a)
+                  case ("printIndent", List(a)) =>
+                    outs(a)
+                    outs('\n')
+                    indent()
+                  case ("printDedent", List(a)) =>
+                    outs('\n')
+                    dedent()
+                    outs(a)
                   case ("printSeq", List(BranchElem(_, branches), sep: String)) =>
                     if (branches nonEmpty) {
                       branches.init foreach { b =>
                         printElem(b)
-                        print(sep)
+                        outs(sep)
                       }
 
                       printElem(branches.last)

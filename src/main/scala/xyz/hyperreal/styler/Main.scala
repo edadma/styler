@@ -18,7 +18,7 @@ object Main extends App {
       |
       |elements = value { "," value } /flatten.
       |""".stripMargin
-  val input = """ {"a": [1], "b": [], "c": {}, "d": null} """
+  val input = """ {"things":[[123],{"things":[[],{"stuff":{"poop":"not nice","pizza":"nice"}},{}]},"asdf"]} """
 
   val jsonFormat =
     """
@@ -31,35 +31,35 @@ object Main extends App {
       |    }
       |  ['array'] -> print '[]';
       |  ['array', elements] -> {
-      |    print '[';
-      |    printSeq elements, ', ';
-      |    print ']';
+      |    printIndent '[';
+      |    printSeq elements, ',\n';
+      |    printDedent ']';
       |    }
       |  ['object'] -> print '{}';
       |  ['object', members] -> {
-      |    print '{';
-      |    printSeq members, ', ';
-      |    print '}';
+      |    printIndent '{';
+      |    printSeq members, ',\n';
+      |    printDedent '}';
       |    }
       |  ['member', key, value] -> {
-      |    printElem(key);
-      |    print(': ');
-      |    printElem(value);
+      |    printElem key;
+      |    print ': ';
+      |    printElem value;
       |    }
       |  <const@('true'|'false'|'null')> -> print const;
       |}
       |""".stripMargin
   val sast = SyntaxParser(jsonSyntax)
 
-  println(sast)
+  //println(sast)
 
   val ast = StylerParser(sast, new CharSequenceReader(input)) getOrElse { println("didn't parse"); sys.exit }
 
-  println(ast)
+  //println(ast)
 
   val fast = FormatParser(jsonFormat)
 
-  println(fast)
+  //println(fast)
   Interpreter(fast, ast)
 
 //  val input = "123"
