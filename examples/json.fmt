@@ -1,0 +1,26 @@
+printElem: {
+  <'number', n> -> print n;
+  <'string', s> -> {
+    print '"';
+    print s;
+    print '"';
+    }
+  ['array'] -> print '[]';
+  ['array', elements] -> {
+    printIndent '[';
+    printSeq elements, ',\n';
+    printDedent ']';
+    }
+  ['object'] -> print '{}';
+  ['object', members] -> {
+    printIndent '{';
+    printSeq members, ',\n';
+    printDedent '}';
+    }
+  ['member', key, value] -> {
+    printElem key;
+    print ': ';
+    printElem value;
+    }
+  <const@('true'|'false'|'null')> -> print const;
+}

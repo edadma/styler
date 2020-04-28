@@ -1,0 +1,13 @@
+expression = term { (`+` | `-`) term } /infixl.
+
+term = factor { (`*` | `/`) factor } /infixl.
+
+factor = unary `^` factor /infix
+       | unary.
+
+unary = `-` primary
+      | primary.
+
+primary = number
+        | ident
+        | "(" expression ")" <group>.

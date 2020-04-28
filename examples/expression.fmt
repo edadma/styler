@@ -1,0 +1,21 @@
+printElem: {
+  <'ident'|'number', lit> -> print(lit);
+  [op@('+'|'-'), left, right] -> {
+    printElem(left);
+    print(' ');
+    print(op);
+    print(' ');
+    printElem(right);
+    }
+  [op@('*'|'/'), left, right] -> {
+    printElem(left);
+    print(op);
+    printElem(right);
+    }
+  ['group', inner@['group', _]] -> printElem(inner);
+  ['group', expr] -> {
+    print('(');
+    printElem(expr);
+    print(')');
+    }
+}

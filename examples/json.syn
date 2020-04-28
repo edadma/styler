@@ -1,0 +1,11 @@
+value = number | string | object | array | `true` | `false` | `null`.
+
+object = "{" members "}" <object> | "{" "}" <object>.
+
+members = member { "," member } /flatten.
+
+member = string ":" value <member>.
+
+array = "[" elements "]" <array> | "[" "]" <array>.
+
+elements = value { "," value } /flatten.
