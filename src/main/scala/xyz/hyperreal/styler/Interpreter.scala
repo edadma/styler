@@ -1,5 +1,7 @@
 package xyz.hyperreal.styler
 
+import java.io.PrintStream
+
 import scala.collection.mutable
 import scala.util.parsing.input.Position
 
@@ -9,27 +11,27 @@ object Interpreter {
 
   val spaces = 2
 
-  def escape(s: String) = s.replace("\n", "\\n")
-
-  def apply(ast: FAST, elem: Elem): Unit = {
+  def apply(ast: FAST, elem: Elem, out: PrintStream): Unit = {
     val declsMap = new mutable.HashMap[String, DeclarationFAST]
     var level    = 0
     var nl       = true
 
-    def outs(a: Any) = a.toString foreach outc
+    def escape(s: String) = s.replace("\n", "\\n")
 
-    def outc(c: Char) =
+    def outs(a: Any): Unit = a.toString foreach outc
+
+    def outc(c: Char): Unit =
       c match {
         case '\n' =>
-          print('\n')
+          out.print('\n')
           nl = true
         case _ =>
           if (nl) {
-            print(" " * spaces * level)
+            out.print(" " * spaces * level)
             nl = false
           }
 
-          print(c)
+          out.print(c)
       }
 
     def indent(): Unit = level += 1
@@ -177,7 +179,7 @@ object Interpreter {
           case None    => declsMap(decl.name) = decl
         }
 
-    def printElem(elem: Elem) = call(null, "printElem", Seq(elem))
+    def printElem(elem: Elem): Unit = call(null, "printElem", Seq(elem))
 
     def apply(ast: FAST): Unit =
       ast match {
