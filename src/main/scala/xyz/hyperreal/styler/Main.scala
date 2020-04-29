@@ -30,33 +30,33 @@ object Main extends App {
       .abbr("v")
   }
 
-  optionsParser.parse(args, Options()) match {
-    case Some(options) =>
-      val s =
-        if (options.source.toString == "-")
-          io.Source.stdin
-        else
-          io.Source.fromFile(options.source)
-
-      val input = readSource(s)
-
-      s.close
-
-      val out =
-        if (options.out ne null)
-          new PrintStream(options.out)
-        else
-          Console.out
-      val syn = readFile(options.syntax ++ ".syn")
-      val fmt = readFile(options.syntax ++ ".fmt")
-
-      val sast = SyntaxParser(syn)
-      val ast  = StylerParser(sast, new CharSequenceReader(input)) getOrElse { println("didn't parse"); sys.exit(1) }
-      val fast = FormatParser(fmt)
-
-      Interpreter(fast, ast, out)
-    case None => sys.exit(1)
-  }
+//  optionsParser.parse(args, Options()) match {
+//    case Some(options) =>
+//      val s =
+//        if (options.source.toString == "-")
+//          io.Source.stdin
+//        else
+//          io.Source.fromFile(options.source)
+//
+//      val input = readSource(s)
+//
+//      s.close
+//
+//      val out =
+//        if (options.out ne null)
+//          new PrintStream(options.out)
+//        else
+//          Console.out
+//      val syn = readFile(options.syntax ++ ".syn")
+//      val fmt = readFile(options.syntax ++ ".fmt")
+//
+//      val sast = SyntaxParser(syn)
+//      val ast  = StylerParser(sast, new CharSequenceReader(input)) getOrElse { println("didn't parse"); sys.exit(1) }
+//      val fast = FormatParser(fmt)
+//
+//      Interpreter(fast, ast, out)
+//    case None => sys.exit(1)
+//  }
 
   def readFile(f: String) = readSource(io.Source.fromFile(f))
 
@@ -67,30 +67,47 @@ object Main extends App {
     res
   }
 
-//  val syn =
-//    """
-//      |syntax = { rule }.
-//      |
-//      |rule = ident ("=") rhs <rule>.
-//      |
-//      |rhs = ident { "|" ident } /flatten.
-//      |""".stripMargin
-//
-//  val fmt =
-//    """
-//      |['rep',
-//      |""".stripMargin
-//
-//  val input =
-//    """
-//      |a = b | c
-//      |""".stripMargin
-//  val sast = SyntaxParser(syn)
-//  val ast  = StylerParser(sast, new CharSequenceReader(input)) getOrElse { println("didn't parse"); sys.exit(1) }
-//
-//  println(ast)
-//  val fast = FormatParser(fmt)
-//
-//  Interpreter(fast, ast, Console.out)
+  val syn =
+    """
+      |syntax = { rule }.
+      |
+      |rule = ident "=" rhs "." <rule>.
+      |
+      |rhs = ident { "|" ident } /flatten.
+      |""".stripMargin
+
+  val fmt =
+    """
+      |eq = 0;
+      |
+      |printElem: {
+      |  ['rep', items] -> printSeq items, ', ';
+      |  ['rule', <'ident', name>, rhs] -> {
+      |    print name;
+      |    print ' ';
+      |    eq = col;
+      |    print '= ';
+      |    printSeq rhs, {
+      |      print '\n';
+      |      printSpace eq;
+      |      print '| ';
+      |      };
+      |    print '.\n\n';
+      |    }
+      |  <'ident', name> -> print name;
+      |}
+      |""".stripMargin
+
+  val input =
+    """
+      |a=b|c.
+      |""".stripMargin
+  val sast = SyntaxParser(syn)
+  val ast  = StylerParser(sast, new CharSequenceReader(input)) getOrElse { println("didn't parse"); sys.exit(1) }
+
+  println(ast)
+  val fast = FormatParser(fmt)
+
+  Interpreter(fast, ast, Console.out)
 
 }

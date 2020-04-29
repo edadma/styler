@@ -11,13 +11,12 @@ case class AlternatesSAST(alts: Seq[PatternSAST]) extends PatternSAST { val pos:
 case class SequenceSAST(seq: Seq[PatternSAST], action: Option[ActionSAST]) extends PatternSAST {
   val pos: Position = null
 }
-case class LiteralSAST(pos: Position, s: String)            extends PatternSAST
-case class IdentifierSAST(pos: Position, s: String)         extends PatternSAST
-case class OptionSAST(pos: Position, pattern: PatternSAST)  extends PatternSAST
-case class RepeatSAST(pos: Position, pattern: PatternSAST)  extends PatternSAST
-case class LiftSAST(pos: Position, elem: PatternSAST)       extends PatternSAST
-case class AddSAST(pos: Position, elem: PatternSAST)        extends PatternSAST
-case class PositionedSAST(pos: Position, elem: PatternSAST) extends PatternSAST
+case class LiteralSAST(pos: Position, s: String)           extends PatternSAST
+case class IdentifierSAST(pos: Position, s: String)        extends PatternSAST
+case class OptionSAST(pos: Position, pattern: PatternSAST) extends PatternSAST
+case class RepeatSAST(pos: Position, pattern: PatternSAST) extends PatternSAST
+case class LiftSAST(pos: Position, elem: PatternSAST)      extends PatternSAST
+case class AddSAST(pos: Position, elem: PatternSAST)       extends PatternSAST
 
 abstract class ActionSAST                                 extends SAST
 case class NormalActionSAST(pos: Position, name: String)  extends ActionSAST

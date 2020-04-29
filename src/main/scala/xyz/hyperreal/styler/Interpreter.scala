@@ -7,12 +7,13 @@ import scala.util.parsing.input.Position
 
 object Interpreter {
 
-  private val reserved = Set("print", "printSeq", "printIndent", "printDedent")
+  private val reserved = Set("print", "printSeq", "printIndent", "printDedent", "printSpace")
 
   val spaces = 2
 
   def apply(ast: FAST, elem: Elem, out: PrintStream): Unit = {
-    val declsMap = new mutable.HashMap[String, DeclarationFAST]
+    val col      = VariableDeclaration(null, "col", LiteralExpression(null, 0))
+    val declsMap = mutable.HashMap[String, DeclarationFAST]("col" -> col)
     var level    = 0
     var nl       = true
 
@@ -25,6 +26,7 @@ object Interpreter {
         case '\n' =>
           out.print('\n')
           nl = true
+          col.value = 0
         case _ =>
           if (nl) {
             out.print(" " * spaces * level)
@@ -32,6 +34,7 @@ object Interpreter {
           }
 
           out.print(c)
+          col.value = col.value.asInstanceOf[Int] + 1
       }
 
     def indent(): Unit = level += 1
@@ -53,43 +56,54 @@ object Interpreter {
                 case None    => problem(pos, "variable not found")
               }
           }
-        case _ =>
+        case b: BlockExpression => b
+        case _                  =>
+      }
+
+    def execute(stmt: StatementFAST, locals: Map[String, Any]): Unit =
+      stmt match {
+        case ApplyStatement(pos, func, args) =>
+          val argvals = args map (a => eval(a, locals))
+
+          (func, argvals) match {
+            case ("printSpace", List(n: Int)) => outs(" " * n)
+            case ("print", List(a))           => outs(a)
+            case ("printIndent", List(a)) =>
+              outs(a)
+              outs('\n')
+              indent()
+            case ("printDedent", List(a)) =>
+              outs('\n')
+              dedent()
+              outs(a)
+            case ("printSeq", List(BranchElem(_, branches), sep)) =>
+              if (branches nonEmpty) {
+                branches.init foreach { b =>
+                  printElem(b)
+
+                  sep match {
+                    case s: String                 => outs(s)
+                    case BlockExpression(_, stmts) => stmts foreach (execute(_, locals))
+                  }
+                }
+
+                printElem(branches.last)
+              }
+            case _ => call(pos, func, argvals)
+          }
+        case BlockStatement(stmts) => stmts foreach (execute(_, locals))
+        case AssignmentStatement(pos, name, epos, expr) =>
+          declsMap get name match {
+            case Some(v: VariableDeclaration) => v.value = eval(expr, locals)
+            case Some(_)                      => problem(pos, "not a variable")
+            case None                         => problem(pos, "not a global variable")
+          }
       }
 
     def call(pos: Position, func: String, args: Seq[Any]): Unit = {
       declsMap get func match {
         case Some(NativeDeclaration(name, func)) => func(args)
         case Some(FunctionDeclaration(_, _, cases)) =>
-          def execute(stmt: StatementFAST, locals: Map[String, Any]): Unit =
-            stmt match {
-              case ApplyStatement(pos, func, args) =>
-                val argvals = args map (a => eval(a, locals))
-
-                (func, argvals) match {
-                  case ("print", List(a)) => outs(a)
-                  case ("printIndent", List(a)) =>
-                    outs(a)
-                    outs('\n')
-                    indent()
-                  case ("printDedent", List(a)) =>
-                    outs('\n')
-                    dedent()
-                    outs(a)
-                  case ("printSeq", List(BranchElem(_, branches), sep: String)) =>
-                    if (branches nonEmpty) {
-                      branches.init foreach { b =>
-                        printElem(b)
-                        outs(sep)
-                      }
-
-                      printElem(branches.last)
-                    }
-                  case _ => call(pos, func, argvals)
-                }
-              case BlockStatement(stmts) => stmts foreach (execute(_, locals))
-              case _                     =>
-            }
-
           val arg = if (args.length == 1) args.head else args
 
           def addvar(pos: Position, name: String, value: Any, vars: Map[String, Any]) =
@@ -108,6 +122,7 @@ object Interpreter {
                   None
               case (VariablePattern(pos, name), value)             => addvar(pos, name, value, vars)
               case (LiteralPattern(pos, pat), StringElem(literal)) => unify(pat, literal, vars)
+              case (LiteralPattern(pos, pat), IntElem(literal))    => unify(pat, literal, vars)
               case (LeafPattern(pos, typ, value), LeafElem(etyp, evalue)) =>
                 unify(typ, etyp, vars) match {
                   case None    => None

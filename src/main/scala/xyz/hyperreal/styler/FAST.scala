@@ -12,9 +12,10 @@ case class FunctionDeclaration(pos: Position, name: String, body: Seq[(PatternFA
     extends DeclarationFAST
 case class NativeDeclaration(name: String, func: Seq[Any] => Unit) extends DeclarationFAST { val pos: Position = null }
 
-abstract class ExpressionFAST                              extends FAST { val pos: Position }
-case class LiteralExpression(pos: Position, literal: Any)  extends ExpressionFAST
-case class VariableExpression(pos: Position, name: String) extends ExpressionFAST
+abstract class ExpressionFAST                                        extends FAST { val pos: Position }
+case class LiteralExpression(pos: Position, literal: Any)            extends ExpressionFAST
+case class VariableExpression(pos: Position, name: String)           extends ExpressionFAST
+case class BlockExpression(pos: Position, stmts: Seq[StatementFAST]) extends ExpressionFAST
 
 abstract class PatternFAST                                                            extends FAST { val pos: Position }
 case class NamedPattern(pos: Position, name: String, pat: PatternFAST)                extends PatternFAST
@@ -27,6 +28,7 @@ case class LeafPattern(pos: Position, typ: PatternFAST, value: PatternFAST)     
 case class BranchPattern(pos: Position, typ: PatternFAST, branches: Seq[PatternFAST]) extends PatternFAST
 case object AnyPattern                                                                extends PatternFAST { val pos: Position = null }
 
-abstract class StatementFAST                                                      extends FAST
-case class BlockStatement(stmts: Seq[StatementFAST])                              extends StatementFAST
-case class ApplyStatement(pos: Position, func: String, args: Seq[ExpressionFAST]) extends StatementFAST
+abstract class StatementFAST                                                                      extends FAST
+case class BlockStatement(stmts: Seq[StatementFAST])                                              extends StatementFAST
+case class ApplyStatement(pos: Position, func: String, args: Seq[ExpressionFAST])                 extends StatementFAST
+case class AssignmentStatement(pos: Position, name: String, epos: Position, expr: ExpressionFAST) extends StatementFAST

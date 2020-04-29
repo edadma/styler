@@ -106,10 +106,6 @@ object StylerParser {
         case LiftSAST(pos, e) => nodewrap(parse(e, r), LiftElem)
         case LiteralSAST(pos, s) =>
           matches(r, s) map (rest => (StringElem(s), skipSpace(rest))) // todo: problem(pos, "literal mismatch")
-        case PositionedSAST(pos, e) =>
-          val pos = r.pos
-
-          parse(e, r) map { case (e, r) => (BranchElem("pos", List(IntElem(pos.column), e)), r) }
         case IdentifierSAST(pos, s) =>
           rules get s match {
             case None =>

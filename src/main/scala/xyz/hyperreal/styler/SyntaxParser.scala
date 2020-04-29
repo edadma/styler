@@ -60,9 +60,6 @@ object SyntaxParser extends RegexParsers {
       pos ~ ("+" ~> elem) ^^ {
         case pos ~ pat => AddSAST(pos, pat)
       } |
-      pos ~ ("(" ~> elem <~ ")") ^^ {
-        case p ~ e => PositionedSAST(p, e)
-      } |
       "(" ~> pattern <~ ")"
 
 //  def number: Parser[LiteralAST] =

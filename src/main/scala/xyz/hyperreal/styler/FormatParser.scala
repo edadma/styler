@@ -50,9 +50,12 @@ object FormatParser extends RegexParsers {
       "{" ~> rep(simpleStatement <~ ";") <~ "}" ^^ BlockStatement
 
   def simpleStatement: Parser[StatementFAST] =
-    pos ~ name ~ repsep(expression, ",") ^^ {
-      case p ~ n ~ args => ApplyStatement(p, n, args)
-    }
+    pos ~ name ~ "=" ~ pos ~ expression ^^ {
+      case p ~ n ~ _ ~ ep ~ e => AssignmentStatement(p, n, ep, e)
+    } |
+      pos ~ name ~ repsep(expression, ",") ^^ {
+        case p ~ n ~ args => ApplyStatement(p, n, args)
+      }
 
   def string: Parser[String] = """"[^"\n]*"|'[^'\n]*'""".r ^^ (s => unescape(s.substring(1, s.length - 1)))
 
@@ -99,6 +102,9 @@ object FormatParser extends RegexParsers {
       } |
       pos ~ name ^^ {
         case p ~ n => VariableExpression(p, n)
+      } |
+      pos ~ ("{" ~> rep(simpleStatement <~ ";") <~ "}") ^^ {
+        case p ~ s => BlockExpression(p, s)
       } |
       "(" ~> expression <~ ")"
 
