@@ -172,7 +172,7 @@ object Interpreter {
           @scala.annotation.tailrec
           def matchCases(cases: Seq[(PatternFAST, StatementFAST)]): Unit =
             cases match {
-              case Nil => problem(pos, "none of the cases matched")
+              case Nil => problem(pos, s"none of the cases matched: $arg")
               case (pat, stmt) :: tail =>
                 unify(pat, arg, Map()) match {
                   case Some(m) => execute(stmt, m)

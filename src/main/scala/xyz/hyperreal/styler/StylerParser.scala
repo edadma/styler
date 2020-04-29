@@ -32,6 +32,11 @@ object StylerParser {
             }
 
           Some(repeat(r))
+        case OptionSAST(pos, pattern) =>
+          parse(pattern, r) match {
+            case None => Some((BranchElem("opt", Nil), r))
+            case s    => s
+          }
         case AlternatesSAST(alts) =>
           @scala.annotation.tailrec
           def alternative(alts: Seq[PatternSAST]): Option[(Elem, Input)] =
