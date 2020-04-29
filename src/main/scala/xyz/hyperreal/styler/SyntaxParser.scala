@@ -32,10 +32,10 @@ object SyntaxParser extends RegexParsers {
       }
 
   def sequence: Parser[PatternSAST] =
-    rep1(elem) ~ opt(action) ^^ {
-      case List(e) ~ None    => e
-      case List(_) ~ Some(_) => sys.error("can't have an action here")
-      case l ~ a             => SequenceSAST(l, a)
+    pos ~ rep1(elem) ~ opt(action) ^^ {
+      case _ ~ List(e) ~ None    => e
+      case p ~ List(_) ~ Some(_) => problem(p, "can't have an action here")
+      case _ ~ l ~ a             => SequenceSAST(l, a)
     }
 
   def elem: Parser[PatternSAST] =
@@ -59,6 +59,9 @@ object SyntaxParser extends RegexParsers {
       } |
       pos ~ ("+" ~> elem) ^^ {
         case pos ~ pat => AddSAST(pos, pat)
+      } |
+      pos ~ ("(" ~> elem <~ ")") ^^ {
+        case p ~ e => PositionedSAST(p, e)
       } |
       "(" ~> pattern <~ ")"
 

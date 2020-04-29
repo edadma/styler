@@ -106,8 +106,8 @@ object Interpreter {
                   Some(vars)
                 else
                   None
-              case (VariablePattern(pos, name), value)              => addvar(pos, name, value, vars)
-              case (LiteralPattern(pos, pat), LiteralElem(literal)) => unify(pat, literal, vars)
+              case (VariablePattern(pos, name), value)             => addvar(pos, name, value, vars)
+              case (LiteralPattern(pos, pat), StringElem(literal)) => unify(pat, literal, vars)
               case (LeafPattern(pos, typ, value), LeafElem(etyp, evalue)) =>
                 unify(typ, etyp, vars) match {
                   case None    => None

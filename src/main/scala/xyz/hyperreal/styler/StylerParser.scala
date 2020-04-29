@@ -25,7 +25,7 @@ object StylerParser {
           @scala.annotation.tailrec
           def repeat(r: Input): (BranchElem, Input) =
             parse(pattern, r) match {
-              case None => (BranchElem("rep", buf.toList), r)
+              case None => (BranchElem("rep", List(BranchElem("items", buf.toList))), r)
               case Some((n, r)) =>
                 buf += n
                 repeat(r)
@@ -64,18 +64,24 @@ object StylerParser {
                     case NormalActionSAST(pos, name) => Some((BranchElem(name, lift), r))
                     case SpecialActionSAST(pos, "infixl") =>
                       val tree =
-                        buf(1).asInstanceOf[BranchElem].branches.foldLeft(buf.head) {
-                          case (a, BranchElem("seq", Seq(LiteralElem(op), b))) =>
-                            BranchElem(op, Seq(a, b))
-                          case _ => problem(pos, "invalid pattern for 'infixl' special action")
-                        }
+                        buf(1)
+                          .asInstanceOf[BranchElem]
+                          .branches
+                          .head
+                          .asInstanceOf[BranchElem]
+                          .branches
+                          .foldLeft(buf.head) {
+                            case (a, BranchElem("seq", Seq(StringElem(op), b))) =>
+                              BranchElem(op, Seq(a, b))
+                            case _ => problem(pos, "invalid pattern for 'infixl' special action")
+                          }
 
                       Some((tree, r))
                     case SpecialActionSAST(pos, "flatten") =>
                       def flatten(l: List[Elem]): List[Elem] =
                         l flatMap {
-                          case BranchElem("rep", nodes) => nodes
-                          case n                        => List(n)
+                          case BranchElem("rep", List(BranchElem(_, nodes))) => nodes
+                          case n                                             => List(n)
                         }
 
                       Some((BranchElem("seq", flatten(buf.toList)), r))
@@ -99,7 +105,11 @@ object StylerParser {
         case AddSAST(pos, e)  => parse(e, r)
         case LiftSAST(pos, e) => nodewrap(parse(e, r), LiftElem)
         case LiteralSAST(pos, s) =>
-          matches(r, s) map (rest => (LiteralElem(s), skipSpace(rest))) // todo: problem(pos, "literal mismatch")
+          matches(r, s) map (rest => (StringElem(s), skipSpace(rest))) // todo: problem(pos, "literal mismatch")
+        case PositionedSAST(pos, e) =>
+          val pos = r.pos
+
+          parse(e, r) map { case (e, r) => (BranchElem("pos", List(IntElem(pos.column), e)), r) }
         case IdentifierSAST(pos, s) =>
           rules get s match {
             case None =>

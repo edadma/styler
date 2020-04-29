@@ -2,7 +2,6 @@ package xyz.hyperreal.styler
 
 import java.io.PrintStream
 
-import scala.reflect.io.File
 import scala.util.parsing.input.CharSequenceReader
 
 object Main extends App {
@@ -17,14 +16,6 @@ object Main extends App {
     head("Styler", "v0.1.0")
     arg[String]("<source file>")
       .action((x, c) => c.copy(source = x))
-//      .validate(
-//        x =>
-//          if (!x.exists)
-//            failure(s"not found: $x")
-//          else if (x.isFile && x.canRead)
-//            success
-//          else
-//            failure(s"unreadable: $x"))
       .text("source file to format (- refers to standard input)")
     arg[String]("<syntax/format file>")
       .action((x, c) => c.copy(syntax = x))
@@ -33,12 +24,6 @@ object Main extends App {
       .optional()
       .valueName("<output file>")
       .action((x, c) => c.copy(out = x))
-//      .validate(
-//        x =>
-//          if (!x.exists || x.canWrite)
-//            success
-//          else
-//            failure(s"Option --out: can't write to $x"))
       .text("optional output file")
     version("version")
       .text("print the version")
@@ -81,5 +66,31 @@ object Main extends App {
     s.close
     res
   }
+
+//  val syn =
+//    """
+//      |syntax = { rule }.
+//      |
+//      |rule = ident ("=") rhs <rule>.
+//      |
+//      |rhs = ident { "|" ident } /flatten.
+//      |""".stripMargin
+//
+//  val fmt =
+//    """
+//      |['rep',
+//      |""".stripMargin
+//
+//  val input =
+//    """
+//      |a = b | c
+//      |""".stripMargin
+//  val sast = SyntaxParser(syn)
+//  val ast  = StylerParser(sast, new CharSequenceReader(input)) getOrElse { println("didn't parse"); sys.exit(1) }
+//
+//  println(ast)
+//  val fast = FormatParser(fmt)
+//
+//  Interpreter(fast, ast, Console.out)
 
 }
