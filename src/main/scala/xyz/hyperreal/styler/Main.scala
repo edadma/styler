@@ -73,9 +73,11 @@ object Main extends App {
       |
       |rule = ident "=" rhs "." <rule>.
       |
-      |rhs = seq [action] <rhs>.
+      |rhs = alt [action] <rhs>.
       |
-      |seq = item { "|" item } /flatten.
+      |alt = seq { "|" seq } /flatten.
+      |
+      |seq = item { item } /flatten.
       |
       |item = ident | string.
       |
@@ -89,12 +91,12 @@ object Main extends App {
       |
       |printElem: {
       |  ['rep', items] -> printSeq items, '\n';
-      |  ['rule', <'ident', name>, ['rhs', seq, action]] -> {
+      |  ['rule', <'ident', name>, ['rhs', alts, action]] -> {
       |    print name;
       |    print ' ';
       |    eq = col;
       |    print '= ';
-      |    printSeq seq, {
+      |    printSeq alts, {
       |      print '\n';
       |      printSpace eq;
       |      print '| ';
@@ -103,7 +105,10 @@ object Main extends App {
       |    print '.\n';
       |    }
       |  <'ident', name> -> print name;
-      |  ['opt'] -> {}
+      |}
+      |
+      |printAction: {
+      |  ['opt'] -> print ' ';
       |  ['normal', '<', name] -> {
       |    print '<';
       |    print name;
@@ -114,16 +119,11 @@ object Main extends App {
       |    print name;
       |    }
       |}
-      |
-      |printAction: {
-      |  ['opt'] -> print ' ';
-      |  [
-      |}
       |""".stripMargin
 
   val input =
     """
-      |a=b|c.d=e.asdf=g|h|i.
+      |a=b b1|c.d=e.asdf=g|h|i.
       |""".stripMargin
   val sast = SyntaxParser(syn)
   val ast  = StylerParser(sast, new CharSequenceReader(input)) getOrElse { println("didn't parse"); sys.exit(1) }
