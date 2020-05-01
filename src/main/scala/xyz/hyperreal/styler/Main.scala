@@ -80,7 +80,7 @@ object Main extends App {
       |item = ident | string.
       |
       |action = ":" ident :name | "/" ident :special
-      |       | "->" element.
+      |       | "->" element :element.
       |
       |element = "[" repsep(element, ",") "]" :element | ident | string | int | "..." int :spread.
       |""".stripMargin
@@ -119,6 +119,9 @@ object Main extends App {
       |  ['special', ['ident', name]] -> {
       |    print ' /';
       |    print name;
+      |    }
+      |  ['element', element] -> {
+      |    print
       |    }
       |}
       |""".stripMargin

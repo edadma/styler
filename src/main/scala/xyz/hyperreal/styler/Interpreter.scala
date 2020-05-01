@@ -48,6 +48,7 @@ object Interpreter {
         case VariableExpression(pos, name) =>
           declsMap get name match {
             case Some(VariableDeclaration(_, _, _, value)) => value
+            case Some(f: FunctionDeclaration)              => f
             case Some(_)                                   => problem(pos, "not a variable")
             case None =>
               locals get name match {
