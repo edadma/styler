@@ -19,53 +19,75 @@ object SyntaxParser extends RegexParsers {
   def pattern: Parser[PatternSAST] =
     rep1sep(sequence, "|") ^^ {
       case List(e) => e
-      case l       => AlternatesSAST(l)
+      case l       => AlternativePatternSAST(l)
+    }
+
+  def sequence: Parser[PatternSAST] =
+    pos ~ rep1(postfixPattern) ~ opt(action) ^^ {
+      case _ ~ List(e) ~ None => e
+      case _ ~ l ~ a          => ConcatenationPatternSAST(l, a)
     }
 
   def action: Parser[ActionSAST] =
-    pos ~ ("<" ~> name <~ ">") ^^ {
-      case p ~ n =>
-        NormalActionSAST(p, n)
+    pos ~ ("/" ~> name) ^^ {
+      case p ~ n => SpecialActionSAST(p, n)
     } |
-      pos ~ ("/" ~> name) ^^ {
-        case p ~ n => SpecialActionSAST(p, n)
+      pos ~ (":" ~> name) ^^ {
+        case p ~ n => NameActionSAST(p, n)
+      } |
+      pos ~ ("->" ~> element) ^^ {
+        case p ~ e => ElementActionSAST(p, e)
       }
 
-  def sequence: Parser[PatternSAST] =
-    pos ~ rep1(elem) ~ opt(action) ^^ {
-      case _ ~ List(e) ~ None    => e
-      case p ~ List(_) ~ Some(_) => problem(p, "can't have an action here")
-      case _ ~ l ~ a             => SequenceSAST(l, a)
-    }
+  def int: Parser[Int] =
+    """\d+""".r ^^ (_.toInt)
 
-  def elem: Parser[PatternSAST] =
-    pos ~ name ^^ {
-      case p ~ n => IdentifierSAST(p, n)
+  def element: Parser[ElementSAST] =
+    "[" ~> repsep(element, ",") <~ "]" ^^ ListElementSAST |
+      string ^^ StringElementSAST |
+      int ^^ RefElementSAST |
+      pos ~ "..." ~ int ^^ {
+        case p ~ _ ~ r => SpreadElementSAST(p, r)
+      }
+
+  def string: Parser[String] =
+    """"[^"\n]*"|'[^'\n]'""".r ^^ (s => s.substring(1, s.length - 1))
+
+  def postfixPattern: Parser[PatternSAST] =
+    pos ~ (primaryPattern <~ "?") ^^ {
+      case pos ~ pat => OptionPatternSAST(pos, pat)
     } |
-      pos ~ """"[^"\n]*"|'[^'\n]'""".r ^^ {
-        case p ~ s => LiteralSAST(p, s.substring(1, s.length - 1))
+      pos ~ (primaryPattern <~ "*") ^^ {
+        case pos ~ pat => RepeatPatternSAST(pos, pat)
+      } |
+      pos ~ (primaryPattern <~ "+") ^^ {
+        case pos ~ pat => Repeat1PatternSAST(pos, pat)
+      } |
+      primaryPattern
+
+  def primaryPattern: Parser[PatternSAST] =
+    pos ~ ("rep1sep" ~> "(" ~> (pattern ~ "," ~ pattern) <~ ")") ^^ {
+      case pos ~ (pat ~ _ ~ sep) => Rep1sepPatternSAST(pos, pat, sep)
+    } |
+      pos ~ ("repsep" ~> "(" ~> (pattern ~ "," ~ pattern) <~ ")") ^^ {
+        case pos ~ (pat ~ _ ~ sep) => RepsepPatternSAST(pos, pat, sep)
+      } |
+      pos ~ name ^^ {
+        case p ~ n => IdentifierPatternSAST(p, n)
+      } |
+      pos ~ string ^^ {
+        case p ~ s => LiteralPatternSAST(p, s, quiet = true)
       } |
       pos ~ """`[^`\n]*`""".r ^^ {
-        case p ~ s => AddSAST(p, LiteralSAST(p, s.substring(1, s.length - 1)))
+        case p ~ s => LiteralPatternSAST(p, s.substring(1, s.length - 1), quiet = false)
       } |
       pos ~ ("[" ~> pattern <~ "]") ^^ {
-        case pos ~ pat => OptionSAST(pos, pat)
+        case pos ~ pat => OptionPatternSAST(pos, pat)
       } |
       pos ~ ("{" ~> pattern <~ "}") ^^ {
-        case pos ~ pat => RepeatSAST(pos, pat)
-      } |
-      pos ~ ("^" ~> elem) ^^ {
-        case pos ~ pat => LiftSAST(pos, pat)
-      } |
-      pos ~ ("+" ~> elem) ^^ {
-        case pos ~ pat => AddSAST(pos, pat)
+        case pos ~ pat => RepeatPatternSAST(pos, pat)
       } |
       "(" ~> pattern <~ ")"
-
-//  def number: Parser[LiteralAST] =
-//    pos ~ """\d+(\.\d*)?""".r ^^ {
-//      case p ~ n => LiteralAST(p, "number", n)
-//    }
 
   def apply(input: String): SyntaxSAST =
     parseAll(syntax, input) match {

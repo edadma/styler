@@ -1,7 +1,5 @@
 package xyz.hyperreal.styler
 
-import java.util.regex.Pattern
-
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
@@ -17,27 +15,64 @@ object StylerParser {
   def apply(syntax: SyntaxSAST, r: Input): Option[Elem] = {
     val rules = new mutable.HashMap[String, PatternSAST]
 
-    def parse(e: PatternSAST, r: Input): Option[(Elem, Input)] =
+    def parse(e: PatternSAST, r: Input): Option[(Elem, Input)] = {
+      //      println("parse", e, r)
+
+      @scala.annotation.tailrec
+      def repeat(pattern: PatternSAST, r: Input, buf: ListBuffer[Elem] = new ListBuffer): (ListElem, Input) =
+        parse(pattern, r) match {
+          case None => (ListElem(buf.toList), r)
+          case Some((n, r)) =>
+            buf += n
+            repeat(pattern, r, buf)
+        }
+
+      def rep1sep(pattern: PatternSAST, sep: PatternSAST, r: Input, buf: ListBuffer[Elem] = new ListBuffer) = {
+        @scala.annotation.tailrec
+        def rep1sep(r: Input): Option[(ListElem, Input)] = {
+          parse(sep, r) match {
+            case None => Some((ListElem(buf.toList), r))
+            case Some((_, r1)) =>
+              parse(pattern, r1) match {
+                case None => Some((ListElem(buf.toList), r))
+                case Some((n, r)) =>
+                  buf += n
+                  rep1sep(r)
+              }
+          }
+        }
+
+        parse(pattern, r) match {
+          case None => None
+          case Some((e, r)) =>
+            buf += e
+            rep1sep(r)
+        }
+      }
+
       e match {
-        case RepeatSAST(pos, pattern) =>
-          val buf = new ListBuffer[Elem]
-
-          @scala.annotation.tailrec
-          def repeat(r: Input): (BranchElem, Input) =
-            parse(pattern, r) match {
-              case None => (BranchElem("rep", List(BranchElem("items", buf.toList))), r)
-              case Some((n, r)) =>
-                buf += n
-                repeat(r)
-            }
-
-          Some(repeat(r))
-        case OptionSAST(pos, pattern) =>
-          parse(pattern, r) match {
-            case None => Some((BranchElem("opt", Nil), r))
+        case RepsepPatternSAST(pos, pattern, sep) =>
+          rep1sep(pattern, sep, r) match {
+            case None => Some(NilElem, r)
             case s    => s
           }
-        case AlternatesSAST(alts) =>
+        case Rep1sepPatternSAST(pos, pattern, sep) => rep1sep(pattern, sep, r)
+        case RepeatPatternSAST(pos, pattern)       => Some(repeat(pattern, r))
+        case Repeat1PatternSAST(pos, pattern) =>
+          val buf = new ListBuffer[Elem]
+
+          parse(pattern, r) match {
+            case None => None
+            case Some((e, r)) =>
+              buf += e
+              Some(repeat(pattern, r, buf))
+          }
+        case OptionPatternSAST(pos, pattern) =>
+          parse(pattern, r) match {
+            case None => Some((NilElem, r))
+            case s    => s
+          }
+        case AlternativePatternSAST(alts) =>
           @scala.annotation.tailrec
           def alternative(alts: Seq[PatternSAST]): Option[(Elem, Input)] =
             alts match {
@@ -50,15 +85,8 @@ object StylerParser {
             }
 
           alternative(alts)
-        case SequenceSAST(seq, action) =>
+        case ConcatenationPatternSAST(seq, action) =>
           val buf = new ListBuffer[Elem]
-
-          def lift =
-            buf.toList flatMap {
-              case LiftElem(BranchElem(_, seq)) => seq
-              case _: LiftElem                  => problem(null, "can only lift a sequence")
-              case e                            => List(e)
-            }
 
           @scala.annotation.tailrec
           def sequence(s: Seq[PatternSAST], r: Input): Option[(Elem, Input)] =
@@ -66,40 +94,53 @@ object StylerParser {
               case Nil =>
                 if (action isDefined) {
                   action.get match {
-                    case NormalActionSAST(pos, name) => Some((BranchElem(name, lift), r))
+                    case NameActionSAST(pos, name) => Some((ListElem(StringElem(name) +: buf.toList), r))
                     case SpecialActionSAST(pos, "infixl") =>
                       val tree =
                         buf(1)
-                          .asInstanceOf[BranchElem]
-                          .branches
-                          .head
-                          .asInstanceOf[BranchElem]
-                          .branches
+                          .asInstanceOf[ListElem]
+                          .elems
                           .foldLeft(buf.head) {
-                            case (a, BranchElem("seq", Seq(StringElem(op), b))) =>
-                              BranchElem(op, Seq(a, b))
+                            case (a, ListElem(Seq(op: StringElem, b))) =>
+                              ListElem(Seq(op, a, b))
                             case _ => problem(pos, "invalid pattern for 'infixl' special action")
                           }
 
                       Some((tree, r))
-                    case SpecialActionSAST(pos, "flatten") =>
-                      def flatten(l: List[Elem]): List[Elem] =
-                        l flatMap {
-                          case BranchElem("rep", List(BranchElem(_, nodes))) => nodes
-                          case n                                             => List(n)
+                    case ElementActionSAST(pos, elem) =>
+                      def mkElem(e: ElementSAST): Elem =
+                        e match {
+                          case ListElementSAST(elems) =>
+                            ListElem(elems flatMap {
+                              case SpreadElementSAST(_, ref) => buf(ref - 1).asInstanceOf[ListElem].elems
+                              case e                         => List(mkElem(e))
+                            })
+                          case RefElementSAST(ref) => buf(ref - 1)
+                          case SpreadElementSAST(pos, ref) =>
+                            problem(pos, "spread operator can only be used inside a list")
+                          case StringElementSAST(s) => StringElem(s)
                         }
 
-                      Some((BranchElem("seq", flatten(buf.toList)), r))
+                      Some(mkElem(elem), r)
+
+                    //                    case SpecialActionSAST(pos, "flatten") =>
+                    //                      def flatten(l: List[Elem]): List[Elem] =
+                    //                        l flatMap {
+                    //                          case ListElem(nodes) => nodes
+                    //                          case n               => List(n)
+                    //                        }
+                    //
+                    //                      Some((ListElem(flatten(buf.toList)), r))
                   }
                 } else if (buf.length == 1)
                   Some((buf.head, r))
                 else
-                  Some(BranchElem("seq", lift), r)
+                  Some(ListElem(buf.toList), r)
               case h :: t =>
                 parse(h, r) match {
                   case None => None
                   case Some((n, r)) =>
-                    if (!h.isInstanceOf[LiteralSAST])
+                    if (!(h.isInstanceOf[LiteralPatternSAST] && h.asInstanceOf[LiteralPatternSAST].quiet))
                       buf += n
 
                     sequence(t, r)
@@ -107,21 +148,19 @@ object StylerParser {
             }
 
           sequence(seq, r)
-        case AddSAST(pos, e)  => parse(e, r)
-        case LiftSAST(pos, e) => nodewrap(parse(e, r), LiftElem)
-        case LiteralSAST(pos, s) =>
-          matches(r, s) map (rest => (StringElem(s), skipSpace(rest))) // todo: problem(pos, "literal mismatch")
-        case IdentifierSAST(pos, s) =>
+        case LiteralPatternSAST(pos, s, _) => matches(r, s) map (rest => (StringElem(s), skipSpace(rest)))
+        case IdentifierPatternSAST(pos, s) =>
           rules get s match {
             case None =>
               builtin get s match {
                 case None => problem(pos, s"unknown rule: $s")
                 case Some(matcher) =>
-                  matcher(r) map { case (m, rest) => (LeafElem(s, m), skipSpace(rest)) } // todo: problem(pos, s"failed to match a '$s'")
+                  matcher(r) map { case (m, rest) => (ListElem(List(StringElem(s), StringElem(m))), skipSpace(rest)) }
               }
             case Some(rule) => parse(rule, r)
           }
       }
+    }
 
     for (p <- syntax.productions)
       rules get p.name match {
@@ -135,14 +174,14 @@ object StylerParser {
         if (r.atEnd)
           Some(n)
         else
-          None
+          None // problem(r.pos, "expected end of input")
     }
   }
 
-  private def nodewrap(res: Option[(Elem, Input)], wrapper: Elem => Elem) =
-    res map {
-      case (n, i) => (wrapper(n), i)
-    }
+  //  private def nodewrap(res: Option[(Elem, Input)], wrapper: Elem => Elem) =
+  //    res map {
+  //      case (n, i) => (wrapper(n), i)
+  //    }
 
   @scala.annotation.tailrec
   private def skipSpace(r: Input): Input =
@@ -185,21 +224,11 @@ object StylerParser {
   private def identMatcher(r: Input) =
     csMatcher(r, c => c.isLetter || c == '_', c => c.isLetterOrDigit || c == '_')
 
-  private def regexMatcher(r: Input, init: Char => Boolean, rest: Char => Boolean, p: Pattern) =
-    csMatcher(r, init, rest) match {
-      case None => None
-      case res @ Some((m, r1)) =>
-        if (p.matcher(m).matches)
-          res
-        else
-          None
-    }
-
   //private val numberRegex   = """(?:\d+\.\d+|\.\d+|\d+)(?:(?:e|E)(?:\+|-)?\d+)?""".r.pattern
 
-  val digit  = SetLexer(_.isDigit)
-  val digits = Rep1Lexer(digit)
-  val dot    = CharLexer('.')
+  val digit: SetLexer   = SetLexer(_.isDigit)
+  val digits: Rep1Lexer = Rep1Lexer(digit)
+  val dot: CharLexer    = CharLexer('.')
 
   abstract class Lexer
   case class CharLexer(c: Char)                  extends Lexer
@@ -210,7 +239,7 @@ object StylerParser {
   case class AltLexer(left: Lexer, right: Lexer) extends Lexer
   case class OptLexer(lex: Lexer)                extends Lexer
 
-  def matches(r: Input, lex: Lexer) = {
+  def matches(r: Input, lex: Lexer): Option[(String, Input)] = {
     @scala.annotation.tailrec
     def rep(r: Input, lex: Lexer, buf: Vector[Char]): Option[(Input, Vector[Char])] =
       lexer(r, lex, buf) match {

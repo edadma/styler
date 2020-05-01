@@ -1,7 +1,5 @@
 package xyz.hyperreal.styler
 
-import java.io
-
 import scala.util.parsing.combinator.RegexParsers
 import scala.util.parsing.input.{Position, Positional}
 
@@ -77,15 +75,8 @@ object FormatParser extends RegexParsers {
       pos ~ string ^^ {
         case p ~ s => StringPattern(p, s)
       } |
-      pos ~ "<" ~ pattern ~ ">" ^^ {
-        case p ~ _ ~ pat ~ _ => LiteralPattern(p, pat)
-      } |
-      pos ~ "<" ~ pattern ~ "," ~ pattern ~ ">" ^^ {
-        case p ~ _ ~ n ~ _ ~ v ~ _ => LeafPattern(p, n, v)
-      } |
-      pos ~ "[" ~ pattern ~ opt("," ~> rep1sep(pattern, ",")) ~ "]" ^^ {
-        case p ~ _ ~ n ~ None ~ _     => BranchPattern(p, n, Nil)
-        case p ~ _ ~ n ~ Some(bs) ~ _ => BranchPattern(p, n, bs)
+      pos ~ ("[" ~> repsep(pattern, ",") <~ "]") ^^ {
+        case p ~ l => ListPattern(p, l)
       } |
       "_" ^^^ AnyPattern |
       "(" ~> pattern <~ ")"
@@ -94,8 +85,8 @@ object FormatParser extends RegexParsers {
     pos ~ string ^^ {
       case p ~ s => LiteralExpression(p, s)
     } |
-      pos ~ """(?:\d+\.\d+|\.\d+|\d+)(?:(?:e|E)(?:\+|-)?\d+)?""".r ^^ {
-        case p ~ n => LiteralExpression(p, n.toDouble)
+      pos ~ """\d+""".r ^^ {
+        case p ~ n => LiteralExpression(p, n.toInt)
       } |
       pos ~ name ^^ {
         case p ~ n => VariableExpression(p, n)
@@ -105,37 +96,39 @@ object FormatParser extends RegexParsers {
       } |
       "(" ~> expression <~ ")"
 
+  // """(?:\d+\.\d+|\.\d+|\d+)(?:(?:e|E)(?:\+|-)?\d+)?""" // todo: double precision
+
   def name: Parser[String] = "[A-Za-z_][A-Za-z0-9_]*".r
 
-//  def sequence: Parser[PatternSAST] =
-//    rep1(elem) ^^ {
-//      case List(e) => e
-//      case l       => SequenceSAST(l)
-//    }
-//
-//  def elem: Parser[PatternSAST] =
-//    pos ~ name ^^ {
-//      case p ~ n => IdentifierSAST(p, n)
-//    } |
-//      pos ~ """"[^"\n]*"|'[^'\n]'""".r ^^ {
-//        case p ~ s => LiteralSAST(p, s.substring(1, s.length - 1))
-//      } |
-//      pos ~ """`[^`\n]*`""".r ^^ {
-//        case p ~ s => AddSAST(p, LiteralSAST(p, s.substring(1, s.length - 1)))
-//      } |
-//      pos ~ ("[" ~> pattern <~ "]") ^^ {
-//        case pos ~ pat => OptionSAST(pos, pat)
-//      } |
-//      pos ~ ("{" ~> pattern <~ "}") ^^ {
-//        case pos ~ pat => RepeatSAST(pos, pat)
-//      } |
-//      pos ~ ("^" ~> elem) ^^ {
-//        case pos ~ pat => LiftSAST(pos, pat)
-//      } |
-//      pos ~ ("+" ~> elem) ^^ {
-//        case pos ~ pat => AddSAST(pos, pat)
-//      } |
-//      "(" ~> pattern <~ ")"
+  //  def sequence: Parser[PatternSAST] =
+  //    rep1(elem) ^^ {
+  //      case List(e) => e
+  //      case l       => SequenceSAST(l)
+  //    }
+  //
+  //  def elem: Parser[PatternSAST] =
+  //    pos ~ name ^^ {
+  //      case p ~ n => IdentifierSAST(p, n)
+  //    } |
+  //      pos ~ """"[^"\n]*"|'[^'\n]'""".r ^^ {
+  //        case p ~ s => LiteralSAST(p, s.substring(1, s.length - 1))
+  //      } |
+  //      pos ~ """`[^`\n]*`""".r ^^ {
+  //        case p ~ s => AddSAST(p, LiteralSAST(p, s.substring(1, s.length - 1)))
+  //      } |
+  //      pos ~ ("[" ~> pattern <~ "]") ^^ {
+  //        case pos ~ pat => OptionSAST(pos, pat)
+  //      } |
+  //      pos ~ ("{" ~> pattern <~ "}") ^^ {
+  //        case pos ~ pat => RepeatSAST(pos, pat)
+  //      } |
+  //      pos ~ ("^" ~> elem) ^^ {
+  //        case pos ~ pat => LiftSAST(pos, pat)
+  //      } |
+  //      pos ~ ("+" ~> elem) ^^ {
+  //        case pos ~ pat => AddSAST(pos, pat)
+  //      } |
+  //      "(" ~> pattern <~ ")"
 
   def apply(input: String): FormatFAST =
     parseAll(format, input) match {

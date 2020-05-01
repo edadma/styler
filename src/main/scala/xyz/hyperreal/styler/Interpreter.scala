@@ -43,9 +43,8 @@ object Interpreter {
 
     def eval(expr: ExpressionFAST, locals: Map[String, Any] = Map()): Any =
       expr match {
-        case LiteralExpression(pos, literal: String) =>
-          literal
-        case LiteralExpression(pos, literal) => literal
+        case LiteralExpression(pos, literal: String) => StringElem(literal)
+        case LiteralExpression(pos, literal: Int)    => IntElem(literal)
         case VariableExpression(pos, name) =>
           declsMap get name match {
             case Some(VariableDeclaration(_, _, _, value)) => value
@@ -66,23 +65,24 @@ object Interpreter {
           val argvals = args map (a => eval(a, locals))
 
           (func, argvals) match {
-            case ("printSpace", List(n: Int)) => outs(" " * n)
-            case ("print", List(a))           => outs(a)
-            case ("printIndent", List(a)) =>
-              outs(a)
+            case ("printSpace", List(n: Int))   => outs(" " * n)
+            case ("print", List(StringElem(s))) => outs(s)
+            case ("print", a)                   => print(a)
+            case ("printIndent", List(StringElem(s))) =>
+              outs(s)
               outs('\n')
               indent()
-            case ("printDedent", List(a)) =>
+            case ("printDedent", List(StringElem(s))) =>
               outs('\n')
               dedent()
-              outs(a)
-            case ("printSeq", List(BranchElem(_, branches), sep)) =>
+              outs(s)
+            case ("printSeq", List(ListElem(branches), sep)) =>
               if (branches nonEmpty) {
                 branches.init foreach { b =>
                   printElem(b)
 
                   sep match {
-                    case s: String                 => outs(s)
+                    case StringElem(s)             => outs(s)
                     case BlockExpression(_, stmts) => stmts foreach (execute(_, locals))
                   }
                 }
@@ -115,39 +115,28 @@ object Interpreter {
           def unify(pat: PatternFAST, value: Any, vars: Map[String, Any]): Option[Map[String, Any]] =
             (pat, value) match {
               case (AnyPattern, _) => Some(vars)
-              case (StringPattern(pos, s), value: String) =>
+              case (StringPattern(pos, s), StringElem(value)) =>
                 if (s == value)
                   Some(vars)
                 else
                   None
-              case (VariablePattern(pos, name), value)             => addvar(pos, name, value, vars)
-              case (LiteralPattern(pos, pat), StringElem(literal)) => unify(pat, literal, vars)
-              case (LiteralPattern(pos, pat), IntElem(literal))    => unify(pat, literal, vars)
-              case (LeafPattern(pos, typ, value), LeafElem(etyp, evalue)) =>
-                unify(typ, etyp, vars) match {
-                  case None    => None
-                  case Some(m) => unify(value, evalue, m)
-                }
-              case (BranchPattern(pos, typ, branches), BranchElem(etyp, ebranches)) =>
-                unify(typ, etyp, vars) match {
-                  case None => None
-                  case Some(m) =>
-                    if (branches.length == ebranches.length) {
-                      @scala.annotation.tailrec
-                      def unifyList(l: Seq[(PatternFAST, Any)], vars: Map[String, Any]): Option[Map[String, Any]] =
-                        l match {
-                          case Nil => Some(vars)
-                          case (p, e) :: tail =>
-                            unify(p, e, vars) match {
-                              case None    => None
-                              case Some(m) => unifyList(tail, m)
-                            }
+              case (VariablePattern(pos, name), value) => addvar(pos, name, value, vars)
+              case (ListPattern(pos, branches), ListElem(ebranches)) =>
+                if (branches.length == ebranches.length) {
+                  @scala.annotation.tailrec
+                  def unifyList(l: Seq[(PatternFAST, Any)], vars: Map[String, Any]): Option[Map[String, Any]] =
+                    l match {
+                      case Nil => Some(vars)
+                      case (p, e) :: tail =>
+                        unify(p, e, vars) match {
+                          case None    => None
+                          case Some(m) => unifyList(tail, m)
                         }
+                    }
 
-                      unifyList(branches zip ebranches, m)
-                    } else
-                      None
-                }
+                  unifyList(branches zip ebranches, vars)
+                } else
+                  None
               case (AlternatesPattern(alts), _) =>
                 @scala.annotation.tailrec
                 def unifyAlts(alts: Seq[PatternFAST]): Option[Map[String, Any]] =

@@ -17,4 +17,6 @@ package object styler {
     sys.exit(1)
   }
 
+  val NilElem: ListElem = ListElem(Nil)
+
 }

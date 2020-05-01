@@ -69,20 +69,20 @@ object Main extends App {
 
   val syn =
     """
-      |syntax = { rule }.
+      |syntax = rule* :rules.
       |
-      |rule = ident "=" rhs "." <rule>.
+      |rule = ident "=" alt "." :rule.
       |
-      |rhs = alt [action] <rhs>.
+      |alt = rep1sep(seq, "|").
       |
-      |alt = seq { "|" seq } /flatten.
-      |
-      |seq = item { item } /flatten.
+      |seq = item* action? :seq.
       |
       |item = ident | string.
       |
-      |action = `<` ident ">" <normal> | `/` ident <special>.
+      |action = ":" ident :name | "/" ident :special
+      |       | "->" element.
       |
+      |element = "[" repsep(element, ",") "]" | ident | string | int.
       |""".stripMargin
 
   val fmt =
@@ -90,8 +90,8 @@ object Main extends App {
       |eq = 0;
       |
       |printElem: {
-      |  ['rep', items] -> printSeq items, '\n';
-      |  ['rule', <'ident', name>, ['rhs', alts, action]] -> {
+      |  ['rules', rules] -> printSeq rules, '\n';
+      |  ['rule', ['ident', name], alts] -> {
       |    print name;
       |    print ' ';
       |    eq = col;
@@ -101,21 +101,23 @@ object Main extends App {
       |      printSpace eq;
       |      print '| ';
       |      };
-      |    printAction action;
       |    print '.\n';
       |    }
-      |  <'ident', name> -> print name;
+      |  ['seq', items, action] -> {
+      |    printSeq items, ' ';
+      |    printAction action;
+      |    }
+      |  ['ident', name] -> print name;
       |}
       |
       |printAction: {
-      |  ['opt'] -> print ' ';
-      |  ['normal', '<', name] -> {
-      |    print '<';
+      |  [] -> {}
+      |  ['name', ['ident', name]] -> {
+      |    print ' :';
       |    print name;
-      |    print '>';
       |    }
-      |  ['special', '/', name] -> {
-      |    print '/';
+      |  ['special', ['ident', name]] -> {
+      |    print ' /';
       |    print name;
       |    }
       |}
