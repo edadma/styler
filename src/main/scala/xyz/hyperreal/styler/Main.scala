@@ -82,7 +82,7 @@ object Main extends App {
       |action = ":" ident :name | "/" ident :special
       |       | "->" element.
       |
-      |element = "[" repsep(element, ",") "]" | ident | string | int.
+      |element = "[" repsep(element, ",") "]" :element | ident | string | int | "..." int :spread.
       |""".stripMargin
 
   val fmt =

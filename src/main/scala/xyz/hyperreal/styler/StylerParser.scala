@@ -8,6 +8,7 @@ object StylerParser {
   private val builtin =
     Map[String, Input => Option[(String, Input)]](
       "number" -> numberMatcher,
+      "int"    -> intMatcher,
       "ident"  -> identMatcher,
       "string" -> stringMatcher
     )
@@ -223,6 +224,9 @@ object StylerParser {
 
   private def identMatcher(r: Input) =
     csMatcher(r, c => c.isLetter || c == '_', c => c.isLetterOrDigit || c == '_')
+
+  private def intMatcher(r: Input) =
+    csMatcher(r, _.isDigit, _.isDigit)
 
   //private val numberRegex   = """(?:\d+\.\d+|\.\d+|\d+)(?:(?:e|E)(?:\+|-)?\d+)?""".r.pattern
 

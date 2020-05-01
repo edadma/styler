@@ -39,8 +39,7 @@ object SyntaxParser extends RegexParsers {
         case p ~ e => ElementActionSAST(p, e)
       }
 
-  def int: Parser[Int] =
-    """\d+""".r ^^ (_.toInt)
+  def int: Parser[Int] = """\d+""".r ^^ (_.toInt)
 
   def element: Parser[ElementSAST] =
     "[" ~> repsep(element, ",") <~ "]" ^^ ListElementSAST |
@@ -50,8 +49,7 @@ object SyntaxParser extends RegexParsers {
         case p ~ _ ~ r => SpreadElementSAST(p, r)
       }
 
-  def string: Parser[String] =
-    """"[^"\n]*"|'[^'\n]'""".r ^^ (s => s.substring(1, s.length - 1))
+  def string: Parser[String] = """"[^"\n]*"|'[^'\n]'""".r ^^ (s => s.substring(1, s.length - 1))
 
   def postfixPattern: Parser[PatternSAST] =
     pos ~ (primaryPattern <~ "?") ^^ {
