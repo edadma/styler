@@ -247,7 +247,7 @@ object StylerParser {
     @scala.annotation.tailrec
     def rep(r: Input, lex: Lexer, buf: Vector[Char]): Option[(Input, Vector[Char])] =
       lexer(r, lex, buf) match {
-        case None           => Some((r, buf.mkString))
+        case None           => Some((r, buf))
         case Some((r, buf)) => rep(r, lex, buf)
       }
 

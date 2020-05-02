@@ -71,13 +71,15 @@ object Main extends App {
     """
       |syntax = rule* :rules.
       |
-      |rule = ident "=" alt "." :rule.
+      |rule = ident "=" pattern "." :rule.
       |
-      |alt = rep1sep(seq, "|").
+      |pattern = rep1sep(seq, "|").
       |
-      |seq = item* action? :seq.
+      |seq = quant* action? :seq.
       |
-      |item = ident | string.
+      |quant = primary "*" :star | primary "+" :plus | primary "?" :quest | primary.
+      |
+      |primary = ident | string | "(" pattern ")" | "{" pattern "}" :rep |"[" pattern "]" :opt.
       |
       |action = ":" ident :name | "/" ident :special
       |       | "->" element :element.
@@ -91,12 +93,12 @@ object Main extends App {
       |
       |printElem: {
       |  ['rules', rules] -> printSeq rules, '\n';
-      |  ['rule', ['ident', name], alts] -> {
+      |  ['rule', ['ident', name], patterns] -> {
       |    print name;
       |    print ' ';
       |    eq = col;
       |    print '= ';
-      |    printSeq alts, {
+      |    printSeq patterns, {
       |      print '\n';
       |      printSpace eq;
       |      print '| ';
@@ -108,6 +110,18 @@ object Main extends App {
       |    printAction action;
       |    }
       |  ['ident', name] -> print name;
+      |  ['star', pat] -> {
+      |    printElem pat;
+      |    print '*';
+      |    }
+      |  ['plus', pat] -> {
+      |    printElem pat;
+      |    print '+';
+      |    }
+      |  ['ques', pat] -> {
+      |    printElem pat;
+      |    print '?';
+      |    }
       |}
       |
       |printAction: {
@@ -121,14 +135,30 @@ object Main extends App {
       |    print name;
       |    }
       |  ['element', element] -> {
-      |    print
+      |    printElem element;
       |    }
       |}
       |""".stripMargin
 
   val input =
+//    """
+//      |syntax = rule* :rules.
+//      |
+//      |rule = ident "=" pattern "." :rule.
+//      |
+//      |pattern = rep1sep(seq, "|").
+//      |
+//      |seq = item* action? :seq.
+//      |
+//      |item = ident | string.
+//      |
+//      |action = ":" ident :name | "/" ident :special
+//      |       | "->" element :element.
+//      |
+//      |element = "[" repsep(element, ",") "]" :element | ident | string | int | "..." int :spread.
+//      |""".stripMargin
     """
-      |a=b b1|c.d=e.asdf=g|h|i.
+      |syntax = rule*.
       |""".stripMargin
   val sast = SyntaxParser(syn)
   val ast  = StylerParser(sast, new CharSequenceReader(input)) getOrElse { println("didn't parse"); sys.exit(1) }
