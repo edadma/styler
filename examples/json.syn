@@ -1,11 +1,11 @@
 value = number | string | object | array | `true` | `false` | `null`.
 
-object = "{" members "}" <object> | "{" "}" <object>.
+object = "{" members "}" | "{" "}" -> "{}".
 
-members = member { "," member } /flatten.
+members = member { "," member } -> ["object", [1, ...2]].
 
-member = string ":" value <member>.
+member = string ":" value :member.
 
-array = "[" elements "]" <array> | "[" "]" <array>.
+array = "[" elements "]" | "[" "]" -> "[]".
 
-elements = value { "," value } /flatten.
+elements = value { "," value } -> ["array", [1, ...2]].

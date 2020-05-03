@@ -1,17 +1,17 @@
 printElem: {
-  <'number', n> -> print n;
-  <'string', s> -> {
+  ['number', n] -> print n;
+  ['string', s] -> {
     print '"';
     print s;
     print '"';
     }
-  ['array'] -> print '[]';
+  '[]' -> print '[]';
   ['array', elements] -> {
     printIndent '[';
     printSeq elements, ',\n';
     printDedent ']';
     }
-  ['object'] -> print '{}';
+  '{}' -> print '{}';
   ['object', members] -> {
     printIndent '{';
     printSeq members, ',\n';
@@ -22,5 +22,5 @@ printElem: {
     print ': ';
     printElem value;
     }
-  <const@('true'|'false'|'null')> -> print const;
+  const@('true'|'false'|'null') -> print const;
 }

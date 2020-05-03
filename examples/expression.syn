@@ -2,7 +2,7 @@ expression = term { (`+` | `-`) term } /infixl.
 
 term = factor { (`*` | `/`) factor } /infixl.
 
-factor = unary `^` factor /infix
+factor = unary `^` factor
        | unary.
 
 unary = `-` primary
@@ -10,4 +10,4 @@ unary = `-` primary
 
 primary = number
         | ident
-        | "(" expression ")" <group>.
+        | "(" expression ")".
