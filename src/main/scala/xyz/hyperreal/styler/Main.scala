@@ -77,7 +77,7 @@ object Main extends App {
       |
       |seq = quant* action? :seq.
       |
-      |quant = primary "*" :star | primary "+" :plus | primary "?" :quest | primary.
+      |quant = primary "*" :star | primary "+" :plus | primary "?" :ques | primary.
       |
       |primary = (`rep1sep`|`repsep`) "(" pattern "," pattern ")" | ident | string | "(" pattern ")" | "{" pattern "}" :rep |"[" pattern "]" :opt.
       |
@@ -156,6 +156,22 @@ object Main extends App {
       |""".stripMargin
 
   val input =
+    """
+      |syntax = rule* :rules.
+      |
+      |rule = ident "=" pattern "." :rule.
+      |
+      |pattern = rep1sep(seq, "|").
+      |
+      |seq = item* action? :seq.
+      |
+      |item = ident | string.
+      |
+      |action = ":" ident :name | "/" ident :special
+      |       | "->" element :element.
+      |
+      |element = "[" repsep(element, ",") "]" :element | ident | string | int | "..." int :spread.
+      |""".stripMargin
 //    """
 //      |syntax = rule* :rules.
 //      |
@@ -164,21 +180,7 @@ object Main extends App {
 //      |pattern = rep1sep(seq, "|").
 //      |
 //      |seq = item* action? :seq.
-//      |
-//      |item = ident | string.
-//      |
-//      |action = ":" ident :name | "/" ident :special
-//      |       | "->" element :element.
-//      |
-//      |element = "[" repsep(element, ",") "]" :element | ident | string | int | "..." int :spread.
 //      |""".stripMargin
-    """
-      |syntax = rule* :rules.
-      |
-      |rule = ident "=" pattern "." :rule.
-      |
-      |pattern = rep1sep(seq, "|").
-      |""".stripMargin
   val sast = SyntaxParser(syn)
   val ast  = StylerParser(sast, new CharSequenceReader(input)) getOrElse { println("didn't parse"); sys.exit(1) }
 

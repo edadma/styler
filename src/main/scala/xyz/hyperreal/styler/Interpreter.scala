@@ -80,7 +80,7 @@ object Interpreter {
             case ("printSeq", List(ListElem(branches), sep)) =>
               if (branches nonEmpty) {
                 branches.init foreach { b =>
-                  printElem(b)
+                  printElem(pos, b)
 
                   sep match {
                     case StringElem(s)             => outs(s)
@@ -88,7 +88,7 @@ object Interpreter {
                   }
                 }
 
-                printElem(branches.last)
+                printElem(pos, branches.last)
               }
             case _ => call(pos, func, argvals)
           }
@@ -184,7 +184,7 @@ object Interpreter {
           case None    => declsMap(decl.name) = decl
         }
 
-    def printElem(elem: Elem): Unit = call(null, "printElem", Seq(elem))
+    def printElem(pos: Position, elem: Elem): Unit = call(pos, "printElem", Seq(elem))
 
     def apply(ast: FAST): Unit =
       ast match {
@@ -194,7 +194,7 @@ object Interpreter {
             case v @ VariableDeclaration(_, _, init, _) => v.value = eval(init)
             case _                                      =>
           }
-          printElem(elem)
+          printElem(null, elem)
         case decl: DeclarationFAST => declare(decl)
       }
 
