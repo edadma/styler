@@ -16,28 +16,28 @@ object StylerParser {
   def apply(syntax: SyntaxSAST, r: Input): Option[Elem] = {
     val rules = new mutable.HashMap[String, PatternSAST]
 
-    def parse(e: PatternSAST, r: Input): Option[(Elem, Input)] = {
+    def parse(e: PatternSAST, r: Input): Option[(List[Elem], Input)] = {
       //      println("parse", e, r)
 
       @scala.annotation.tailrec
-      def repeat(pattern: PatternSAST, r: Input, buf: ListBuffer[Elem] = new ListBuffer): (ListElem, Input) =
+      def repeat(pattern: PatternSAST, r: Input, buf: ListBuffer[Elem] = new ListBuffer): (List[ListElem], Input) =
         parse(pattern, r) match {
-          case None => (ListElem(buf.toList), r)
+          case None => (List(ListElem(buf.toList)), r)
           case Some((n, r)) =>
-            buf += n
+            buf ++= n
             repeat(pattern, r, buf)
         }
 
       def rep1sep(pattern: PatternSAST, sep: PatternSAST, r: Input, buf: ListBuffer[Elem] = new ListBuffer) = {
         @scala.annotation.tailrec
-        def rep1sep(r: Input): Option[(ListElem, Input)] = {
+        def rep1sep(r: Input): Option[(List[ListElem], Input)] = {
           parse(sep, r) match {
-            case None => Some((ListElem(buf.toList), r))
+            case None => Some((List(ListElem(buf.toList)), r))
             case Some((_, r1)) =>
               parse(pattern, r1) match {
-                case None => Some((ListElem(buf.toList), r))
+                case None => Some((List(ListElem(buf.toList)), r))
                 case Some((n, r)) =>
-                  buf += n
+                  buf ++= n
                   rep1sep(r)
               }
           }
@@ -46,7 +46,7 @@ object StylerParser {
         parse(pattern, r) match {
           case None => None
           case Some((e, r)) =>
-            buf += e
+            buf ++= e
             rep1sep(r)
         }
       }
@@ -54,7 +54,7 @@ object StylerParser {
       e match {
         case RepsepPatternSAST(pos, pattern, sep) =>
           rep1sep(pattern, sep, r) match {
-            case None => Some(NilElem, r)
+            case None => Some(List(NilElem), r)
             case s    => s
           }
         case Rep1sepPatternSAST(pos, pattern, sep) => rep1sep(pattern, sep, r)
@@ -65,17 +65,17 @@ object StylerParser {
           parse(pattern, r) match {
             case None => None
             case Some((e, r)) =>
-              buf += e
+              buf ++= e
               Some(repeat(pattern, r, buf))
           }
         case OptionPatternSAST(pos, pattern) =>
           parse(pattern, r) match {
-            case None => Some((NilElem, r))
+            case None => Some((List(NilElem), r))
             case s    => s
           }
         case AlternativePatternSAST(alts) =>
           @scala.annotation.tailrec
-          def alternative(alts: Seq[PatternSAST]): Option[(Elem, Input)] =
+          def alternative(alts: Seq[PatternSAST]): Option[(List[Elem], Input)] =
             alts match {
               case Nil => None
               case h :: t =>
@@ -90,12 +90,12 @@ object StylerParser {
           val buf = new ListBuffer[Elem]
 
           @scala.annotation.tailrec
-          def sequence(s: Seq[PatternSAST], r: Input): Option[(Elem, Input)] =
+          def sequence(s: Seq[PatternSAST], r: Input): Option[(List[Elem], Input)] =
             s match {
               case Nil =>
                 if (action isDefined) {
                   action.get match {
-                    case NameActionSAST(pos, name) => Some((ListElem(StringElem(name) +: buf.toList), r))
+                    case NameActionSAST(pos, name) => Some((List(ListElem(StringElem(name) +: buf.toList)), r))
                     case SpecialActionSAST(pos, "infixl") =>
                       val tree =
                         buf(1)
@@ -107,7 +107,7 @@ object StylerParser {
                             case _ => problem(pos, "invalid pattern for 'infixl' special action")
                           }
 
-                      Some((tree, r))
+                      Some((List(tree), r))
                     case ElementActionSAST(pos, elem) =>
                       def mkElem(e: ElementSAST): Elem =
                         e match {
@@ -122,7 +122,7 @@ object StylerParser {
                           case StringElementSAST(s) => StringElem(s)
                         }
 
-                      Some(mkElem(elem), r)
+                      Some(List(mkElem(elem)), r)
 
                     //                    case SpecialActionSAST(pos, "flatten") =>
                     //                      def flatten(l: List[Elem]): List[Elem] =
@@ -134,29 +134,31 @@ object StylerParser {
                     //                      Some((ListElem(flatten(buf.toList)), r))
                   }
                 } else if (buf.length == 1)
-                  Some((buf.head, r))
+                  Some((List(buf.head), r))
                 else
-                  Some(ListElem(buf.toList), r)
+                  Some(List(ListElem(buf.toList)), r)
               case h :: t =>
                 parse(h, r) match {
                   case None => None
                   case Some((n, r)) =>
-                    if (!(h.isInstanceOf[LiteralPatternSAST] && h.asInstanceOf[LiteralPatternSAST].quiet))
-                      buf += n
+                    buf ++= n
 
                     sequence(t, r)
                 }
             }
 
           sequence(seq, r)
-        case LiteralPatternSAST(pos, s, _) => matches(r, s) map (rest => (StringElem(s), skipSpace(rest)))
+        case LiteralPatternSAST(pos, s)      => matches(r, s) map (rest => (List(StringElem(s)), skipSpace(rest)))
+        case QuietLiteralPatternSAST(pos, s) => matches(r, s) map (rest => (Nil, skipSpace(rest)))
         case IdentifierPatternSAST(pos, s) =>
           rules get s match {
             case None =>
               builtin get s match {
                 case None => problem(pos, s"unknown rule: $s")
                 case Some(matcher) =>
-                  matcher(r) map { case (m, rest) => (ListElem(List(StringElem(s), StringElem(m))), skipSpace(rest)) }
+                  matcher(r) map {
+                    case (m, rest) => (List(ListElem(List(StringElem(s), StringElem(m)))), skipSpace(rest))
+                  }
               }
             case Some(rule) => parse(rule, r)
           }
@@ -171,11 +173,13 @@ object StylerParser {
 
     parse(syntax.productions.head.pattern, skipSpace(r)) match {
       case None => None
-      case Some((n, r)) =>
+      case Some((List(n), r)) =>
         if (r.atEnd)
           Some(n)
         else
           None // problem(r.pos, "expected end of input")
+      case Some((ns, r)) =>
+        None // problem(r.pos, "more than one elem returned")
     }
   }
 

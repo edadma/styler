@@ -79,7 +79,7 @@ object Main extends App {
       |
       |quant = primary "*" :star | primary "+" :plus | primary "?" :quest | primary.
       |
-      |primary = ("rep1sep"|"repsep") "(" pattern "," pattern ")" | ident | string | "(" pattern ")" | "{" pattern "}" :rep |"[" pattern "]" :opt.
+      |primary = (`rep1sep`|`repsep`) "(" pattern "," pattern ")" | ident | string | "(" pattern ")" | "{" pattern "}" :rep |"[" pattern "]" :opt.
       |
       |action = ":" ident :name | "/" ident :special
       |       | "->" element :element.
@@ -127,7 +127,17 @@ object Main extends App {
       |    printElem pat;
       |    print '?';
       |    }
+      |  [f@('rep1sep'|'repsep'), pat, sep] -> {
+      |    print f;
+      |    print '(';
+      |    printPattern pat;
+      |    print ', ';
+      |    printPattern sep;
+      |    print ')';
+      |  }
       |}
+      |
+      |printPattern: pattern -> printSeq pattern, {print ' | ';};
       |
       |printAction: {
       |  [] -> {}

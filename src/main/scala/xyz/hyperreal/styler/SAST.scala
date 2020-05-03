@@ -9,7 +9,8 @@ case class ProductionSAST(pos: Position, name: String, pattern: PatternSAST) ext
 abstract class PatternSAST                                                             extends SAST
 case class AlternativePatternSAST(alts: Seq[PatternSAST])                              extends PatternSAST
 case class ConcatenationPatternSAST(seq: Seq[PatternSAST], action: Option[ActionSAST]) extends PatternSAST
-case class LiteralPatternSAST(pos: Position, s: String, quiet: Boolean)                extends PatternSAST
+case class LiteralPatternSAST(pos: Position, s: String)                                extends PatternSAST
+case class QuietLiteralPatternSAST(pos: Position, s: String)                           extends PatternSAST
 case class IdentifierPatternSAST(pos: Position, s: String)                             extends PatternSAST
 case class OptionPatternSAST(pos: Position, pattern: PatternSAST)                      extends PatternSAST
 case class RepeatPatternSAST(pos: Position, pattern: PatternSAST)                      extends PatternSAST

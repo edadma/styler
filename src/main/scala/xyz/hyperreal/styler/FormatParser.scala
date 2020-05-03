@@ -33,7 +33,10 @@ object FormatParser extends RegexParsers {
   def function: Parser[FunctionDeclaration] =
     pos ~ name ~ ":" ~ ("{" ~> rep1(arrow) <~ "}") ^^ {
       case p ~ n ~ _ ~ cs => FunctionDeclaration(p, n, cs)
-    }
+    } |
+      pos ~ name ~ ":" ~ arrow ^^ {
+        case p ~ n ~ _ ~ cs => FunctionDeclaration(p, n, List(cs))
+      }
 
   def arrow: Parser[(PatternFAST, StatementFAST)] =
     pattern ~ "->" ~ statement ^^ {

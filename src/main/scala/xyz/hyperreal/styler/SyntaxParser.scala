@@ -74,10 +74,10 @@ object SyntaxParser extends RegexParsers {
         case p ~ n => IdentifierPatternSAST(p, n)
       } |
       pos ~ string ^^ {
-        case p ~ s => LiteralPatternSAST(p, s, quiet = true)
+        case p ~ s => QuietLiteralPatternSAST(p, s)
       } |
       pos ~ """`[^`\n]*`""".r ^^ {
-        case p ~ s => LiteralPatternSAST(p, s.substring(1, s.length - 1), quiet = false)
+        case p ~ s => LiteralPatternSAST(p, s.substring(1, s.length - 1))
       } |
       pos ~ ("[" ~> pattern <~ "]") ^^ {
         case pos ~ pat => OptionPatternSAST(pos, pat)
