@@ -10,4 +10,4 @@ unary = `-` primary
 
 primary = number
         | ident
-        | "(" expression ")".
+        | "(" expression ")" :group.

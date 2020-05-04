@@ -1,5 +1,5 @@
 printElem: {
-  <'ident'|'number', lit> -> print(lit);
+  ['ident'|'number', lit] -> print(lit);
   [op@('+'|'-'), left, right] -> {
     printElem(left);
     print(' ');

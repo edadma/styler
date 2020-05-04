@@ -30,33 +30,33 @@ object Main extends App {
       .abbr("v")
   }
 
-//  optionsParser.parse(args, Options()) match {
-//    case Some(options) =>
-//      val s =
-//        if (options.source.toString == "-")
-//          io.Source.stdin
-//        else
-//          io.Source.fromFile(options.source)
-//
-//      val input = readSource(s)
-//
-//      s.close
-//
-//      val out =
-//        if (options.out ne null)
-//          new PrintStream(options.out)
-//        else
-//          Console.out
-//      val syn = readFile(options.syntax ++ ".syn")
-//      val fmt = readFile(options.syntax ++ ".fmt")
-//
-//      val sast = SyntaxParser(syn)
-//      val ast  = StylerParser(sast, new CharSequenceReader(input)) getOrElse { println("didn't parse"); sys.exit(1) }
-//      val fast = FormatParser(fmt)
-//
-//      Interpreter(fast, ast, out)
-//    case None => sys.exit(1)
-//  }
+  optionsParser.parse(args, Options()) match {
+    case Some(options) =>
+      val s =
+        if (options.source.toString == "-")
+          io.Source.stdin
+        else
+          io.Source.fromFile(options.source)
+
+      val input = readSource(s)
+
+      s.close
+
+      val out =
+        if (options.out ne null)
+          new PrintStream(options.out)
+        else
+          Console.out
+      val syn = readFile(options.syntax ++ ".syn")
+      val fmt = readFile(options.syntax ++ ".fmt")
+
+      val sast = SyntaxParser(syn)
+      val ast  = StylerParser(sast, new CharSequenceReader(input)) getOrElse { println("didn't parse"); sys.exit(1) }
+      val fast = FormatParser(fmt)
+
+      Interpreter(fast, ast, out)
+    case None => sys.exit(1)
+  }
 
   def readFile(f: String) = readSource(io.Source.fromFile(f))
 
@@ -67,154 +67,129 @@ object Main extends App {
     res
   }
 
-  val syn =
-    """
-      |syntax = rule* :rules.
-      |
-      |rule = ident "=" pattern "." :rule.
-      |
-      |pattern = rep1sep(seq, "|") :alts.
-      |
-      |seq = quant* action? :seq.
-      |
-      |quant = primary "*" :star | primary "+" :plus | primary "?" :ques | primary.
-      |
-      |primary = (`rep1sep`|`repsep`) "(" pattern "," pattern ")" | ident | string | backQuoteString | "(" pattern ")" | "{" pattern "}" :rep |"[" pattern "]" :opt.
-      |
-      |action = ":" ident :name | "/" ident :special
-      |       | "->" element :element.
-      |
-      |element = "[" repsep(element, ",") "]" :element | ident | string | int | "..." int :spread.
-      |""".stripMargin
-
-  val fmt =
-    """
-      |eq = 0;
-      |
-      |printElem: {
-      |  ['rules', rules] -> printSeq rules, '\n';
-      |  ['rule', ['ident', name], ['alts', patterns]] -> {
-      |    print name;
-      |    print ' ';
-      |    eq = col;
-      |    print '= ';
-      |    printSeq patterns, {
-      |      print '\n';
-      |      printSpace eq;
-      |      print '| ';
-      |      };
-      |    print '.\n';
-      |    }
-      |  ['alts', alts] -> {
-      |    print '(';
-      |    printSeq alts, {print ' | ';};
-      |    print ')';
-      |    }
-      |  ['seq', items, action] -> {
-      |    printSeq items, ' ';
-      |    printAction action;
-      |    }
-      |  ['ident', name] -> print name;
-      |  ['string', string] -> {
-      |    print '"';
-      |    print string;
-      |    print '"';
-      |    }
-      |  ['backQuoteString', string] -> {
-      |    print '`';
-      |    print string;
-      |    print '`';
-      |    }
-      |  ['star', pat] -> {
-      |    printElem pat;
-      |    print '*';
-      |    }
-      |  ['plus', pat] -> {
-      |    printElem pat;
-      |    print '+';
-      |    }
-      |  ['ques', pat] -> {
-      |    printElem pat;
-      |    print '?';
-      |    }
-      |  [f@('rep1sep'|'repsep'), pat, sep] -> {
-      |    print f;
-      |    print '(';
-      |    printPattern pat;
-      |    print ', ';
-      |    printPattern sep;
-      |    print ')';
-      |  }
-      |}
-      |
-      |printPattern: ['alts', alts] -> printSeq alts, {print ' | ';};
-      |
-      |printAction: {
-      |  [] -> {}
-      |  ['name', ['ident', name]] -> {
-      |    print ' :';
-      |    print name;
-      |    }
-      |  ['special', ['ident', name]] -> {
-      |    print ' /';
-      |    print name;
-      |    }
-      |  ['element', element] -> {
-      |    printElem element;
-      |    }
-      |}
-      |""".stripMargin
-
-  val input =
-    """
-      |syntax = rule* :rules.
-      |
-      |rule = ident "=" pattern "." :rule.
-      |
-      |pattern = rep1sep(seq, "|") :alts.
-      |
-      |seq = quant* action? :seq.
-      |
-      |quant = primary "*" :star | primary "+" :plus | primary "?" :ques | primary.
-      |
-      |primary = (`rep1sep`|`repsep`) "(" pattern "," pattern ")" | ident | string | "(" pattern ")" | "{" pattern "}" :rep |"[" pattern "]" :opt.
-      |
-      |action = ":" ident :name | "/" ident :special
-      |       | "->" element :element.
-      |
-      |element = "[" repsep(element, ",") "]" :element | ident | string | int | "..." int :spread.
-      |""".stripMargin
-  val sast = SyntaxParser(syn)
-  val ast  = StylerParser(sast, new CharSequenceReader(input)) getOrElse { println("didn't parse"); sys.exit(1) }
-
-  println(ast)
-  val fast = FormatParser(fmt)
-
-  Interpreter(fast, ast, Console.out)
+//  val syn =
+//    """
+//      |syntax = rule* :rules.
+//      |
+//      |rule = ident "=" pattern "." :rule.
+//      |
+//      |pattern = rep1sep(seq, "|") :alts.
+//      |
+//      |seq = quant* action? :seq.
+//      |
+//      |quant = primary "*" :star | primary "+" :plus | primary "?" :ques | primary.
+//      |
+//      |primary = (`rep1sep`|`repsep`) "(" pattern "," pattern ")" | ident | string | backQuoteString | "(" pattern ")" | "{" pattern "}" :rep |"[" pattern "]" :opt.
+//      |
+//      |action = ":" ident :name | "/" ident :special
+//      |       | "->" element :element.
+//      |
+//      |element = "[" repsep(element, ",") "]" :element | ident | string | int | "..." int :spread.
+//      |""".stripMargin
+//
+//  val fmt =
+//    """
+//      |eq = 0;
+//      |
+//      |printElem: {
+//      |  ['rules', rules] -> printSeq rules, '\n';
+//      |  ['rule', ['ident', name], ['alts', patterns]] -> {
+//      |    print name;
+//      |    print ' ';
+//      |    eq = col;
+//      |    print '= ';
+//      |    printSeq patterns, {
+//      |      print '\n';
+//      |      printSpace eq;
+//      |      print '| ';
+//      |      };
+//      |    print '.\n';
+//      |    }
+//      |  ['alts', alts] -> {
+//      |    print '(';
+//      |    printSeq alts, {print ' | ';};
+//      |    print ')';
+//      |    }
+//      |  ['seq', items, action] -> {
+//      |    printSeq items, ' ';
+//      |    printAction action;
+//      |    }
+//      |  ['ident', name] -> print name;
+//      |  ['string', string] -> {
+//      |    print '"';
+//      |    print string;
+//      |    print '"';
+//      |    }
+//      |  ['backQuoteString', string] -> {
+//      |    print '`';
+//      |    print string;
+//      |    print '`';
+//      |    }
+//      |  ['star', pat] -> {
+//      |    printElem pat;
+//      |    print '*';
+//      |    }
+//      |  ['plus', pat] -> {
+//      |    printElem pat;
+//      |    print '+';
+//      |    }
+//      |  ['ques', pat] -> {
+//      |    printElem pat;
+//      |    print '?';
+//      |    }
+//      |  [f@('rep1sep'|'repsep'), pat, sep] -> {
+//      |    print f;
+//      |    print '(';
+//      |    printPattern pat;
+//      |    print ', ';
+//      |    printPattern sep;
+//      |    print ')';
+//      |  }
+//      |}
+//      |
+//      |printPattern: ['alts', alts] -> printSeq alts, {print ' | ';};
+//      |
+//      |printAction: {
+//      |  [] -> {}
+//      |  ['name', ['ident', name]] -> {
+//      |    print ' :';
+//      |    print name;
+//      |    }
+//      |  ['special', ['ident', name]] -> {
+//      |    print ' /';
+//      |    print name;
+//      |    }
+//      |  ['element', element] -> {
+//      |    printElem element;
+//      |    }
+//      |}
+//      |""".stripMargin
+//
+//  val input =
+//    """
+//      |syntax = rule* :rules.
+//      |
+//      |rule = ident "=" pattern "." :rule.
+//      |
+//      |pattern = rep1sep(seq, "|") :alts.
+//      |
+//      |seq = quant* action? :seq.
+//      |
+//      |quant = primary "*" :star | primary "+" :plus | primary "?" :ques | primary.
+//      |
+//      |primary = (`rep1sep`|`repsep`) "(" pattern "," pattern ")" | ident | string | backQuoteString | "(" pattern ")" | "{" pattern "}" :rep |"[" pattern "]" :opt.
+//      |
+//      |action = ":" ident :name | "/" ident :special
+//      |       | "->" element :element.
+//      |
+//      |element = "[" repsep(element, ",") "]" :element | ident | string | int | "..." int :spread.
+//      |""".stripMargin
+//  val sast = SyntaxParser(syn)
+//  val ast  = StylerParser(sast, new CharSequenceReader(input)) getOrElse { println("didn't parse"); sys.exit(1) }
+//
+//  println(ast)
+//  val fast = FormatParser(fmt)
+//
+//  Interpreter(fast, ast, Console.out)
 
 }
-
-/*
-
-ListElem(List(
-  ListElem(List(
-    StringElem(seq),
-    ListElem(List(
-      ListElem(List(
-        StringElem(backQuoteString), StringElem(rep1sep)
-      ))
-    )),
-    ListElem(List())
-  )),
-  ListElem(List(
-    StringElem(seq),
-    ListElem(List(
-      ListElem(List(
-        StringElem(backQuoteString), StringElem(repsep)
-      ))
-    )),
-    ListElem(List())
-  ))
-))
-
- */
