@@ -38,6 +38,11 @@ printElem: {
     printElem pat;
     print '*';
     }
+  ['rep', pat] -> {
+    print '{ ';
+    printPattern pat;
+    print ' }';
+    }
   ['plus', pat] -> {
     printElem pat;
     print '+';
@@ -45,6 +50,11 @@ printElem: {
   ['ques', pat] -> {
     printElem pat;
     print '?';
+    }
+  ['opt', pat] -> {
+    print '[ ';
+    printPattern pat;
+    print ' ]';
     }
   [f@('rep1sep'|'repsep'), pat, sep] -> {
     print f;
