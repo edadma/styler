@@ -73,13 +73,13 @@ object Main extends App {
       |
       |rule = ident "=" pattern "." :rule.
       |
-      |pattern = rep1sep(seq, "|").
+      |pattern = rep1sep(seq, "|") :alts.
       |
       |seq = quant* action? :seq.
       |
       |quant = primary "*" :star | primary "+" :plus | primary "?" :ques | primary.
       |
-      |primary = (`rep1sep`|`repsep`) "(" pattern "," pattern ")" | ident | string | "(" pattern ")" | "{" pattern "}" :rep |"[" pattern "]" :opt.
+      |primary = (`rep1sep`|`repsep`) "(" pattern "," pattern ")" | ident | string | backQuoteString | "(" pattern ")" | "{" pattern "}" :rep |"[" pattern "]" :opt.
       |
       |action = ":" ident :name | "/" ident :special
       |       | "->" element :element.
@@ -93,7 +93,7 @@ object Main extends App {
       |
       |printElem: {
       |  ['rules', rules] -> printSeq rules, '\n';
-      |  ['rule', ['ident', name], patterns] -> {
+      |  ['rule', ['ident', name], ['alts', patterns]] -> {
       |    print name;
       |    print ' ';
       |    eq = col;
@@ -105,6 +105,11 @@ object Main extends App {
       |      };
       |    print '.\n';
       |    }
+      |  ['alts', alts] -> {
+      |    print '(';
+      |    printSeq alts, {print ' | ';};
+      |    print ')';
+      |    }
       |  ['seq', items, action] -> {
       |    printSeq items, ' ';
       |    printAction action;
@@ -114,6 +119,11 @@ object Main extends App {
       |    print '"';
       |    print string;
       |    print '"';
+      |    }
+      |  ['backQuoteString', string] -> {
+      |    print '`';
+      |    print string;
+      |    print '`';
       |    }
       |  ['star', pat] -> {
       |    printElem pat;
@@ -137,7 +147,7 @@ object Main extends App {
       |  }
       |}
       |
-      |printPattern: pattern -> printSeq pattern, {print ' | ';};
+      |printPattern: ['alts', alts] -> printSeq alts, {print ' | ';};
       |
       |printAction: {
       |  [] -> {}
@@ -161,26 +171,19 @@ object Main extends App {
       |
       |rule = ident "=" pattern "." :rule.
       |
-      |pattern = rep1sep(seq, "|").
+      |pattern = rep1sep(seq, "|") :alts.
       |
-      |seq = item* action? :seq.
+      |seq = quant* action? :seq.
       |
-      |item = ident | string.
+      |quant = primary "*" :star | primary "+" :plus | primary "?" :ques | primary.
+      |
+      |primary = (`rep1sep`|`repsep`) "(" pattern "," pattern ")" | ident | string | "(" pattern ")" | "{" pattern "}" :rep |"[" pattern "]" :opt.
       |
       |action = ":" ident :name | "/" ident :special
       |       | "->" element :element.
       |
       |element = "[" repsep(element, ",") "]" :element | ident | string | int | "..." int :spread.
       |""".stripMargin
-//    """
-//      |syntax = rule* :rules.
-//      |
-//      |rule = ident "=" pattern "." :rule.
-//      |
-//      |pattern = rep1sep(seq, "|").
-//      |
-//      |seq = item* action? :seq.
-//      |""".stripMargin
   val sast = SyntaxParser(syn)
   val ast  = StylerParser(sast, new CharSequenceReader(input)) getOrElse { println("didn't parse"); sys.exit(1) }
 
@@ -190,3 +193,28 @@ object Main extends App {
   Interpreter(fast, ast, Console.out)
 
 }
+
+/*
+
+ListElem(List(
+  ListElem(List(
+    StringElem(seq),
+    ListElem(List(
+      ListElem(List(
+        StringElem(backQuoteString), StringElem(rep1sep)
+      ))
+    )),
+    ListElem(List())
+  )),
+  ListElem(List(
+    StringElem(seq),
+    ListElem(List(
+      ListElem(List(
+        StringElem(backQuoteString), StringElem(repsep)
+      ))
+    )),
+    ListElem(List())
+  ))
+))
+
+ */

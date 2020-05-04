@@ -7,10 +7,11 @@ object StylerParser {
 
   private val builtin =
     Map[String, Input => Option[(String, Input)]](
-      "number" -> numberMatcher,
-      "int"    -> intMatcher,
-      "ident"  -> identMatcher,
-      "string" -> stringMatcher
+      "number"          -> numberMatcher,
+      "int"             -> intMatcher,
+      "ident"           -> identMatcher,
+      "string"          -> stringMatcher,
+      "backQuoteString" -> backQuoteStringMatcher
     )
 
   def apply(syntax: SyntaxSAST, r: Input): Option[Elem] = {
@@ -197,6 +198,17 @@ object StylerParser {
 
   private def stringMatcher(r: Input) = {
     csMatcher(r, _ == '"', _ != '"') match {
+      case None => None
+      case Some((s, r)) =>
+        if (r.atEnd)
+          None
+        else
+          Some((s substring 1, r.rest))
+    }
+  }
+
+  private def backQuoteStringMatcher(r: Input) = {
+    csMatcher(r, _ == '`', _ != '`') match {
       case None => None
       case Some((s, r)) =>
         if (r.atEnd)
