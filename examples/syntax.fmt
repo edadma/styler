@@ -1,0 +1,74 @@
+eq = 0;
+
+printElem: {
+  ['rules', rules] -> printSeq rules, '\n';
+  ['rule', ['ident', name], ['alts', patterns]] -> {
+    print name;
+    print ' ';
+    eq = col;
+    print '= ';
+    printSeq patterns, {
+      print '\n';
+      printSpace eq;
+      print '| ';
+      };
+    print '.\n';
+    }
+  ['alts', alts] -> {
+    print '(';
+    printSeq alts, {print ' | ';};
+    print ')';
+    }
+  ['seq', items, action] -> {
+    printSeq items, ' ';
+    printAction action;
+    }
+  ['ident', name] -> print name;
+  ['string', string] -> {
+    print '"';
+    print string;
+    print '"';
+    }
+  ['backQuoteString', string] -> {
+    print '`';
+    print string;
+    print '`';
+    }
+  ['star', pat] -> {
+    printElem pat;
+    print '*';
+    }
+  ['plus', pat] -> {
+    printElem pat;
+    print '+';
+    }
+  ['ques', pat] -> {
+    printElem pat;
+    print '?';
+    }
+  [f@('rep1sep'|'repsep'), pat, sep] -> {
+    print f;
+    print '(';
+    printPattern pat;
+    print ', ';
+    printPattern sep;
+    print ')';
+  }
+}
+
+printPattern: ['alts', alts] -> printSeq alts, {print ' | ';};
+
+printAction: {
+  [] -> {}
+  ['name', ['ident', name]] -> {
+    print ' :';
+    print name;
+    }
+  ['special', ['ident', name]] -> {
+    print ' /';
+    print name;
+    }
+  ['element', element] -> {
+    printElem element;
+    }
+}
